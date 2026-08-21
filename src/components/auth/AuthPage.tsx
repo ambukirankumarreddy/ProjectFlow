@@ -180,9 +180,9 @@ export const AuthPage: React.FC = () => {
   const handleQuickDemo = (userRole: 'admin' | 'pm' | 'lead' | 'dev') => {
     setAuthError('');
     if (userRole === 'admin') {
-      loginWithEmail('rajesh.varma@edgeforce.in', 'admin123', true);
+      loginWithEmail('ambukiran@edgeforce.in', 'admin123', true);
     } else if (userRole === 'pm') {
-      loginWithEmail('sarah.jenkins@edgeforce.in', 'pm123', true);
+      loginWithEmail('sarah.j@edgeforce.in', 'pm123', true);
     } else if (userRole === 'lead') {
       loginWithEmail('vikram.malhotra@edgeforce.in', 'lead123', true);
     } else {
@@ -457,7 +457,7 @@ export const AuthPage: React.FC = () => {
                     className="p-2 rounded-xl bg-slate-950 border border-purple-500/30 hover:border-purple-500/60 text-left text-xs transition-colors"
                   >
                     <span className="font-bold text-purple-300 block">Super Admin</span>
-                    <span className="text-[10px] text-slate-500 truncate block">Rajesh Varma</span>
+                    <span className="text-[10px] text-slate-500 truncate block">Ambu Kiran</span>
                   </button>
 
                   <button
