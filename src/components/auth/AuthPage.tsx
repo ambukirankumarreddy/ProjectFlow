@@ -20,6 +20,7 @@ import {
   Briefcase,
   ChevronRight
 } from 'lucide-react';
+import { GoogleOAuthModal } from './GoogleOAuthModal';
 import { UserRole } from '../../types';
 
 export const AuthPage: React.FC = () => {
@@ -33,6 +34,7 @@ export const AuthPage: React.FC = () => {
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<'signin' | 'register_org' | 'accept_invite'>('signin');
+  const [isGoogleOAuthModalOpen, setIsGoogleOAuthModalOpen] = useState(false);
 
   // Sign-in Form State
   const [email, setEmail] = useState('');
@@ -119,13 +121,10 @@ export const AuthPage: React.FC = () => {
     }
   };
 
-  // 4. Handle Google SSO Click
+  // 4. Handle Google SSO Click (Opens real Google OAuth & GSI Dialog)
   const handleGoogleSignIn = () => {
     setAuthError('');
-    const result = loginWithGoogle();
-    if (!result.success) {
-      setAuthError(result.message || 'Google SSO failed.');
-    }
+    setIsGoogleOAuthModalOpen(true);
   };
 
   // 4. Handle Super Admin & Organization Registration
@@ -743,6 +742,19 @@ export const AuthPage: React.FC = () => {
       <footer className="p-4 border-t border-slate-800/80 text-center text-xs text-slate-500 backdrop-blur-xl bg-slate-950/40 relative z-10">
         ProjectFlow AI Enterprise Platform • Secured with Google OAuth 2.0 & Role-Based Access Control • FY 2026-27
       </footer>
+
+      {/* Real Google OAuth & Identity Services Modal */}
+      <GoogleOAuthModal
+        isOpen={isGoogleOAuthModalOpen}
+        onClose={() => setIsGoogleOAuthModalOpen(false)}
+        companyDomain={orgSettings.companyDomain}
+        onSuccess={(profile) => {
+          const result = loginWithGoogle(profile);
+          if (!result.success) {
+            setAuthError(result.message || 'Google Sign-In failed domain validation.');
+          }
+        }}
+      />
     </div>
   );
 };
