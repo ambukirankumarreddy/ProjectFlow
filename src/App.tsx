@@ -40,8 +40,7 @@ import { AIAgentHub } from './components/ai/AIAgentHub';
 import { AICopilotDrawer } from './components/ai/AICopilotDrawer';
 import { AISafetyModal } from './components/ai/AISafetyModal';
 
-// Auth, Admin & Security
-import { GoogleAuthModal } from './components/auth/GoogleAuthModal';
+// Administration & Security
 import { OrgOnboardingWizard } from './components/admin/OrgOnboardingWizard';
 import { WorkflowBuilder } from './components/admin/WorkflowBuilder';
 import { AuditLogsView } from './components/admin/AuditLogsView';
@@ -52,8 +51,6 @@ export const AppContent: React.FC = () => {
   const {
     currentView,
     setCurrentView,
-    isGoogleAuthModalOpen,
-    setIsGoogleAuthModalOpen,
     isNotificationCentreOpen,
     setIsNotificationCentreOpen,
     isNotificationSettingsOpen,
@@ -165,10 +162,6 @@ export const AppContent: React.FC = () => {
       <NotificationSettingsModal
         isOpen={isNotificationSettingsOpen}
         onClose={() => setIsNotificationSettingsOpen(false)}
-      />
-      <GoogleAuthModal
-        isOpen={isGoogleAuthModalOpen}
-        onClose={() => setIsGoogleAuthModalOpen(false)}
       />
       <GlobalSearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
       <AICopilotDrawer isOpen={isAICopilotOpen} onClose={() => setIsAICopilotOpen(false)} />
