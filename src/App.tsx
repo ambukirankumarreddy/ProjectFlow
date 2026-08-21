@@ -4,6 +4,9 @@ import { Sidebar } from './components/layout/Sidebar';
 import { Navbar } from './components/layout/Navbar';
 import { GlobalSearchModal } from './components/layout/GlobalSearchModal';
 
+// Authentication & Registration Pages
+import { AuthPage } from './components/auth/AuthPage';
+
 // Dashboards & Boards
 import { DashboardHub } from './components/dashboard/DashboardHub';
 import { PersonalDashboard } from './components/dashboard/PersonalDashboard';
@@ -49,6 +52,7 @@ import { Task } from './types';
 
 export const AppContent: React.FC = () => {
   const {
+    isAuthenticated,
     currentView,
     setCurrentView,
     isNotificationCentreOpen,
@@ -62,6 +66,11 @@ export const AppContent: React.FC = () => {
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
   const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
   const [selectedTaskDetail, setSelectedTaskDetail] = useState<Task | null>(null);
+
+  // If user is not signed in, show dedicated Auth & Registration Portal
+  if (!isAuthenticated) {
+    return <AuthPage />;
+  }
 
   const renderView = () => {
     switch (currentView) {

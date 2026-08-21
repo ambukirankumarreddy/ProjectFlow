@@ -76,7 +76,15 @@ interface AppContextType {
   currentView: string;
   setCurrentView: (view: string) => void;
 
-  // Google Authentication & RBAC
+  // Authentication & Session
+  isAuthenticated: boolean;
+  loginWithEmail: (email: string, password: string, bypass2FA?: boolean) => { success: boolean; message?: string; twoFactorRequired?: boolean; user?: User };
+  loginWithGoogle: () => { success: boolean; message?: string };
+  registerOrganization: (data: any) => { success: boolean; message?: string };
+  registerWithInvite: (data: any) => { success: boolean; message?: string };
+  logout: () => void;
+
+  // Users & RBAC
   currentUser: User;
   activeRole: UserRole;
   users: User[];
@@ -228,6 +236,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // Theme
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [currentView, setCurrentView] = useState<string>('dashboard');
+
+  // Authentication & Session
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    return localStorage.getItem('projectflow_auth') === 'true';
+  });
 
   // Users & RBAC & Teams
   const [users, setUsers] = useState<User[]>(INITIAL_USERS);
@@ -435,10 +448,181 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
-  // Google Login Simulator
+  // Email / Password Login with Optional 2FA
+  const loginWithEmail = (email: string, password: string, bypass2FA = false) => {
+    const matchedUser = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+    if (!matchedUser) {
+      return {
+        success: false,
+        message: `Account '${email}' not found. Please register your organization or join with an invitation code.`,
+      };
+    }
+
+    if ((matchedUser.role === 'Super Admin' || matchedUser.twoFactorEnabled) && !bypass2FA) {
+      return { success: true, twoFactorRequired: true, user: matchedUser };
+    }
+
+    setCurrentUser(matchedUser);
+    setActiveRole(matchedUser.role);
+    setIsAuthenticated(true);
+    localStorage.setItem('projectflow_auth', 'true');
+    logAction(`User authenticated: ${matchedUser.name} (${matchedUser.email})`, 'Authentication Engine');
+    audioEngine.playSound('approval_result');
+    return { success: true, user: matchedUser };
+  };
+
+  // Google SSO Login
+  const loginWithGoogle = () => {
+    const defaultGoogleUser = users.find(u => u.isGoogleVerified) || users[0];
+    setCurrentUser(defaultGoogleUser);
+    setActiveRole(defaultGoogleUser.role);
+    setIsAuthenticated(true);
+    localStorage.setItem('projectflow_auth', 'true');
+    logAction(`Google SSO Verified: ${defaultGoogleUser.name} (${defaultGoogleUser.googleEmail || defaultGoogleUser.email})`, 'Google OAuth 2.0');
+    audioEngine.playSound('approval_result');
+    return { success: true };
+  };
+
+  // One-Time Super Admin & Organization Registration (Starts with 100% clean data)
+  const registerOrganization = (data: any) => {
+    const newOrgDomain = (data.domain || 'edgeforce.in').replace('@', '').toLowerCase();
+    const newSuperAdmin: User = {
+      id: `usr-admin-${Date.now()}`,
+      employeeId: 'ADM-001',
+      name: data.adminName || 'Super Admin',
+      email: data.adminEmail || `admin@${newOrgDomain}`,
+      googleEmail: data.adminEmail,
+      isGoogleVerified: true,
+      companyDomain: newOrgDomain,
+      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+      role: 'Super Admin',
+      department: 'Executive Leadership',
+      designation: 'Managing Director & Super Admin',
+      grade: 'L6 - Executive',
+      branch: 'Corporate HQ',
+      joiningDate: new Date().toISOString().split('T')[0],
+      employmentType: 'Permanent',
+      skills: ['Strategic Leadership', 'Defense Programs'],
+      monthlySalaryINR: 250000,
+      hourlyCostINR: 1562,
+      dailyCostINR: 12500,
+      billableRateINR: 4500,
+      availabilityHoursPerWeek: 40,
+      twoFactorEnabled: true,
+      projectAllocations: [],
+      status: 'Active',
+    };
+
+    setOrgSettings(prev => ({
+      ...prev,
+      name: data.organizationName || 'New Organization',
+      companyDomain: newOrgDomain,
+      industry: data.industry || 'Defense & Aerospace Simulation',
+      isConfigured: true,
+    }));
+
+    // Fresh Clean Workspace (zero dummy records)
+    setUsers([newSuperAdmin]);
+    setCurrentUser(newSuperAdmin);
+    setActiveRole('Super Admin');
+    setProjects([]);
+    setTasks([]);
+    setEpics([]);
+    setSprints([]);
+    setBomItems([]);
+    setBugs([]);
+    setRequirements([]);
+    setTimesheets([]);
+    setMeetings([]);
+    setAlertEscalations([]);
+    setConversations([
+      {
+        id: 'conv-general',
+        type: 'announcement',
+        name: '📢 Company Announcements',
+        description: 'Official organization announcements channel',
+        memberIds: [newSuperAdmin.id],
+        isPrivate: false,
+        createdAt: 'Just now',
+        updatedAt: 'Just now',
+      },
+      {
+        id: 'conv-ai-flowpilot',
+        type: 'ai',
+        name: 'FlowPilot AI Assistant',
+        description: 'Autonomous AI workspace copilot',
+        memberIds: [newSuperAdmin.id, 'usr-ai'],
+        isPrivate: false,
+        createdAt: 'Just now',
+        updatedAt: 'Just now',
+      }
+    ]);
+
+    setIsAuthenticated(true);
+    localStorage.setItem('projectflow_auth', 'true');
+    logAction(`Organization registered: ${data.organizationName} by ${data.adminName}`, 'Organization Setup');
+    audioEngine.playSound('approval_result');
+    return { success: true };
+  };
+
+  // Employee Onboarding via Invitation
+  const registerWithInvite = (data: any) => {
+    if (data.token !== 'EF-INVITE-2026' && !data.token.startsWith('INV-')) {
+      return { success: false, message: 'Invalid invitation token code. Try demo code EF-INVITE-2026.' };
+    }
+
+    const newEmp: User = {
+      id: `usr-emp-${Date.now()}`,
+      employeeId: `EMP-${Math.floor(100 + Math.random() * 900)}`,
+      name: data.name,
+      email: data.email,
+      googleEmail: data.email,
+      isGoogleVerified: true,
+      companyDomain: orgSettings.companyDomain,
+      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
+      role: data.role || 'Developer/Member',
+      department: data.department || 'Software',
+      designation: 'Specialist Engineer',
+      grade: 'L3 - Specialist',
+      branch: 'Main Office',
+      joiningDate: new Date().toISOString().split('T')[0],
+      employmentType: 'Permanent',
+      skills: ['Development', 'Engineering'],
+      functionalManagerId: data.functionalManagerId || undefined,
+      departmentHeadId: data.functionalManagerId || undefined,
+      administrativeManagerId: data.functionalManagerId || undefined,
+      monthlySalaryINR: 95000,
+      hourlyCostINR: 593,
+      dailyCostINR: 4750,
+      billableRateINR: 1800,
+      availabilityHoursPerWeek: 40,
+      projectAllocations: [],
+      status: 'Active',
+    };
+
+    setUsers(prev => [...prev, newEmp]);
+    setCurrentUser(newEmp);
+    setActiveRole(newEmp.role);
+    setIsAuthenticated(true);
+    localStorage.setItem('projectflow_auth', 'true');
+    logAction(`Employee onboarded via invitation: ${newEmp.name}`, 'HR Onboarding');
+    audioEngine.playSound('approval_result');
+    return { success: true };
+  };
+
+  // Sign Out
+  const logout = () => {
+    setIsAuthenticated(false);
+    localStorage.removeItem('projectflow_auth');
+    logAction(`User signed out: ${currentUser.name}`, 'Authentication');
+  };
+
+  // Legacy Google Login Simulator
   const loginWithGoogleUser = (user: User) => {
     setCurrentUser(user);
     setActiveRole(user.role);
+    setIsAuthenticated(true);
+    localStorage.setItem('projectflow_auth', 'true');
     logAction(`Google SSO Verified: ${user.name} (${user.email})`, 'Google OAuth 2.0');
     setIsGoogleAuthModalOpen(false);
     audioEngine.playSound('direct_message');
@@ -1388,6 +1572,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         toggleTheme,
         currentView,
         setCurrentView,
+        isAuthenticated,
+        loginWithEmail,
+        loginWithGoogle,
+        registerOrganization,
+        registerWithInvite,
+        logout,
         currentUser,
         activeRole,
         users,

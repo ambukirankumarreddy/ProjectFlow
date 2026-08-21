@@ -57,6 +57,8 @@ export const Navbar: React.FC<NavbarProps> = ({
     stopEmergencyAlarm,
     unlockAudio,
     playNotificationSound,
+    logout,
+    orgSettings,
   } = useApp();
 
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
@@ -321,10 +323,21 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <Sliders className="w-4 h-4 text-amber-400" />
                   <span>Audio & Alert Preferences</span>
                 </button>
+
+                <button
+                  onClick={() => {
+                    logout();
+                    setIsProfileMenuOpen(false);
+                  }}
+                  className="w-full px-3 py-2 rounded-xl hover:bg-rose-950/40 text-rose-300 hover:text-rose-200 flex items-center gap-2.5 text-left transition-colors font-semibold"
+                >
+                  <RotateCcw className="w-4 h-4 text-rose-400" />
+                  <span>Sign Out / Switch Account</span>
+                </button>
               </div>
 
               <div className="pt-2 border-t border-slate-800 flex items-center justify-between text-[11px]">
-                <span className="text-slate-500 font-mono">Edgeforce Defense</span>
+                <span className="text-slate-500 font-mono">{orgSettings.name.split(' ')[0]}</span>
                 <span className="text-emerald-400 font-semibold flex items-center gap-1">
                   <ShieldCheck className="w-3.5 h-3.5" />
                   <span>SSO Active</span>
