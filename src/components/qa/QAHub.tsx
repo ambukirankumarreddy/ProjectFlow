@@ -18,21 +18,21 @@ import {
 } from 'lucide-react';
 
 export const QAHub: React.FC = () => {
-  const { testCases, updateTestCaseStatus, bugs, addBug, updateBug, users, currentUser } = useApp();
+  const { testCases, updateTestCaseStatus, bugs, addBug, updateBug, users, currentUser, selectedProject, projects } = useApp();
   const [activeTab, setActiveTab] = useState<'tests' | 'bugs'>('tests');
   const [search, setSearch] = useState('');
   const [isBugModalOpen, setIsBugModalOpen] = useState(false);
 
   // New bug state
   const [bugTitle, setBugTitle] = useState('');
-  const [bugEnvironment, setBugEnvironment] = useState('Motion Rig #1 (Hardware)');
-  const [buildVersion, setBuildVersion] = useState('v0.8.4-alpha');
+  const [bugEnvironment, setBugEnvironment] = useState('Hardware / Simulation Rig');
+  const [buildVersion, setBuildVersion] = useState('v1.0.0-rc1');
   const [steps, setSteps] = useState('');
   const [expected, setExpected] = useState('');
   const [actual, setActual] = useState('');
   const [severity, setSeverity] = useState<Bug['severity']>('Major');
   const [priority, setPriority] = useState<TaskPriority>('High');
-  const [assignedDevId, setAssignedDevId] = useState(users[1]?.id || 'usr-2');
+  const [assignedDevId, setAssignedDevId] = useState(() => users[0]?.id || '');
 
   const passedCount = testCases.filter(t => t.executionStatus === 'passed').length;
   const failedCount = testCases.filter(t => t.executionStatus === 'failed').length;
@@ -45,7 +45,7 @@ export const QAHub: React.FC = () => {
 
     const newBug: Bug = {
       id: `bug-${Date.now()}`,
-      key: `BMP2-BUG-0${bugs.length + 1}`,
+      key: `${selectedProject?.key || 'BUG'}-BUG-${bugs.length + 1}`,
       title: bugTitle,
       environment: bugEnvironment,
       buildVersion,
@@ -57,7 +57,7 @@ export const QAHub: React.FC = () => {
       assignedDeveloperId: assignedDevId,
       retestStatus: 'Pending',
       status: 'In Progress',
-      projectId: 'proj-1',
+      projectId: selectedProject?.id || projects[0]?.id || '',
     };
 
     addBug(newBug);

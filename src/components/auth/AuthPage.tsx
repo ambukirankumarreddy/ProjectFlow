@@ -44,17 +44,17 @@ export const AuthPage: React.FC = () => {
   const [authError, setAuthError] = useState('');
   const [pendingUser, setPendingUser] = useState<any>(null);
 
-  // Register Org Form State
-  const [orgName, setOrgName] = useState('Edgeforce Simulation & Aerospace');
-  const [orgDomain, setOrgDomain] = useState('edgeforce.in');
-  const [adminName, setAdminName] = useState('Ambu Kiran Kumar Reddy');
-  const [adminEmail, setAdminEmail] = useState('ambukiran@edgeforce.in');
-  const [adminPassword, setAdminPassword] = useState('Password@2026');
-  const [adminConfirmPassword, setAdminConfirmPassword] = useState('Password@2026');
+  // Register Org Form State (Empty for Fresh Registration)
+  const [orgName, setOrgName] = useState('');
+  const [orgDomain, setOrgDomain] = useState('');
+  const [adminName, setAdminName] = useState('');
+  const [adminEmail, setAdminEmail] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
+  const [adminConfirmPassword, setAdminConfirmPassword] = useState('');
   const [industry, setIndustry] = useState('Defense & Aerospace Simulation');
 
   // Employee Invite Form State
-  const [inviteToken, setInviteToken] = useState('EF-INVITE-2026');
+  const [inviteToken, setInviteToken] = useState('');
   const [empName, setEmpName] = useState('');
   const [empEmail, setEmpEmail] = useState('');
   const [empPassword, setEmpPassword] = useState('');

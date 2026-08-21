@@ -110,7 +110,7 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, 
             <input
               type="text"
               required
-              placeholder="e.g. BMP-II Combat Vehicle Simulator"
+              placeholder="e.g. Autonomous Flight Control Suite"
               value={name}
               onChange={e => {
                 setName(e.target.value);
@@ -136,7 +136,7 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, 
               type="text"
               required
               maxLength={6}
-              placeholder="e.g. BMP2"
+              placeholder="e.g. AFCS"
               value={key}
               onChange={e => setKey(e.target.value.toUpperCase())}
               className="w-full p-2.5 bg-slate-900 border border-slate-700 rounded-xl text-slate-100 font-mono uppercase font-bold text-xs focus:outline-none focus:border-brand-500"

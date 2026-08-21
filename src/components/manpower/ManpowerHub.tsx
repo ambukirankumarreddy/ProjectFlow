@@ -28,7 +28,7 @@ export const ManpowerHub: React.FC = () => {
   const [activeTab, setActiveTab] = useState<
     'org_tree' | 'dept_tree' | 'project_tree' | 'allocations' | 'approval_matrix'
   >('org_tree');
-  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('usr-2'); // Vikram Malhotra by default
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>(() => users[0]?.id || '');
   const [searchQuery, setSearchQuery] = useState('');
 
   const selectedEmployee = users.find(u => u.id === selectedEmployeeId) || users[0];
@@ -439,14 +439,16 @@ export const ManpowerHub: React.FC = () => {
               </div>
 
               {/* Allocations Table */}
+              {/* Allocations Table */}
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
                   <thead>
                     <tr className="border-b border-slate-800 bg-slate-900/80 text-slate-400 uppercase text-[10px] tracking-wider">
                       <th className="py-3 px-3">Employee</th>
                       <th className="py-3 px-3">Department</th>
-                      <th className="py-3 px-3">BMP-II Simulator</th>
-                      <th className="py-3 px-3">Drone Swarm</th>
+                      {projects.map(p => (
+                        <th key={p.id} className="py-3 px-3 truncate max-w-[120px]">{p.name}</th>
+                      ))}
                       <th className="py-3 px-3">Total Load</th>
                       <th className="py-3 px-3">Monthly Cost</th>
                     </tr>
@@ -456,8 +458,6 @@ export const ManpowerHub: React.FC = () => {
                       .filter(u => u.role !== 'AI Agent' && u.role !== 'Client/Viewer')
                       .map(u => {
                         const total = getTotalAllocation(u);
-                        const bmpAlloc = u.projectAllocations.find(p => p.projectId === 'proj-1')?.allocationPercentage || 0;
-                        const droneAlloc = u.projectAllocations.find(p => p.projectId === 'proj-2')?.allocationPercentage || 0;
 
                         return (
                           <tr
@@ -477,20 +477,18 @@ export const ManpowerHub: React.FC = () => {
                               </div>
                             </td>
                             <td className="py-3 px-3 text-slate-300 text-[11px]">{u.department}</td>
-                            <td className="py-3 px-3 font-mono text-[11px]">
-                              {bmpAlloc > 0 ? (
-                                <span className="font-bold text-brand-300">{bmpAlloc}%</span>
-                              ) : (
-                                <span className="text-slate-600">-</span>
-                              )}
-                            </td>
-                            <td className="py-3 px-3 font-mono text-[11px]">
-                              {droneAlloc > 0 ? (
-                                <span className="font-bold text-purple-300">{droneAlloc}%</span>
-                              ) : (
-                                <span className="text-slate-600">-</span>
-                              )}
-                            </td>
+                            {projects.map(p => {
+                              const alloc = u.projectAllocations.find(a => a.projectId === p.id)?.allocationPercentage || 0;
+                              return (
+                                <td key={p.id} className="py-3 px-3 font-mono text-[11px]">
+                                  {alloc > 0 ? (
+                                    <span className="font-bold text-brand-300">{alloc}%</span>
+                                  ) : (
+                                    <span className="text-slate-600">-</span>
+                                  )}
+                                </td>
+                              );
+                            })}
                             <td className="py-3 px-3 whitespace-nowrap">
                               {getAllocationBadge(total, u.status)}
                             </td>

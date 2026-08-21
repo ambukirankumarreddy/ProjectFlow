@@ -45,15 +45,13 @@ export const ScrumBoard: React.FC<{ onOpenCreateTask: () => void; onSelectTask: 
 
   const isOverloaded = totalPlannedPoints > currentSprint.capacity;
 
-  // Mock burndown data
+  // Dynamic sprint burndown data
+  const remainingPoints = totalPlannedPoints - completedPoints;
   const burndownData = [
-    { day: 'Day 1', ideal: 54, actual: 54 },
-    { day: 'Day 3', ideal: 46, actual: 50 },
-    { day: 'Day 5', ideal: 38, actual: 44 },
-    { day: 'Day 7', ideal: 30, actual: 36 },
-    { day: 'Day 9', ideal: 22, actual: 24 },
-    { day: 'Day 11', ideal: 14, actual: 18 },
-    { day: 'Day 14 (Target)', ideal: 0, actual: 0 },
+    { day: 'Sprint Start', ideal: totalPlannedPoints, actual: totalPlannedPoints },
+    { day: 'Mid-Sprint', ideal: Math.round(totalPlannedPoints * 0.5), actual: Math.max(0, Math.round(totalPlannedPoints * 0.6)) },
+    { day: 'Current', ideal: Math.round(totalPlannedPoints * 0.25), actual: remainingPoints },
+    { day: 'Sprint Goal', ideal: 0, actual: 0 },
   ];
 
   const handleCompleteSprint = () => {

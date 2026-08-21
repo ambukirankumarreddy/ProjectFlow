@@ -277,7 +277,7 @@ export const ChatHub: React.FC = () => {
                 <input
                   type="text"
                   required
-                  placeholder="e.g. bmp2-avionics-testers"
+                  placeholder="e.g. engineering-lead-sync"
                   value={newConvName}
                   onChange={e => setNewConvName(e.target.value)}
                   className="w-full p-2.5 bg-slate-950 border border-slate-700 rounded-xl text-slate-100 focus:outline-none focus:border-brand-500"

@@ -20,16 +20,14 @@ import {
 
 export const AIProjectWizard: React.FC = () => {
   const { setPendingAIAction, users, currentUser } = useApp();
-  const [prompt, setPrompt] = useState(
-    'Create a 120-day BMP-II Combat Simulator project with 4 Unity developers, 3D modelling team, and separate hardware, electrical and mechanical workstreams.'
-  );
+  const [prompt, setPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedPlan, setGeneratedPlan] = useState<any>(null);
 
   const samplePrompts = [
-    'Create a 120-day BMP-II simulator project with 4 Unity developers, full modelling team and separate hardware, electrical and mechanical streams.',
-    'Generate an Autonomous Tactical Drone Swarm program with ROS2, computer vision, flight controllers, and HIL regression tests.',
-    'Build a NextGen Mil-Spec Command & Control tactical radar interface with 60-day delivery sprints.',
+    'Create an Autonomous Flight Control & Sensor Suite with software, embedded hardware and test streams.',
+    'Build a NextGen Command & Control tactical dashboard with 60-day delivery sprints.',
+    'Design an Enterprise IoT Telemetry Platform with cloud APIs, edge firmware, and QA automation.',
   ];
 
   const handleGenerate = (e: React.FormEvent) => {
@@ -41,21 +39,23 @@ export const AIProjectWizard: React.FC = () => {
     setTimeout(() => {
       // Synthesize realistic comprehensive multi-stream WBS in INR
       const newProjectId = `proj-ai-${Date.now()}`;
-      const projectKey = 'BMP-AI';
+      const words = prompt.trim().split(' ').filter(w => w.length > 2);
+      const projectKey = (words[0] ? words[0].substring(0, 4).toUpperCase() : 'PROJ') + '-AI';
+      const projectName = prompt.length > 60 ? prompt.substring(0, 57) + '...' : prompt;
 
       const generatedProject: Project = {
         id: newProjectId,
         key: projectKey,
-        name: 'BMP-II Combat Simulator (AI Synthesized 120-Day Program)',
-        description: 'Multi-stream armored vehicle simulator with hydraulic motion base, physical cockpit CAN bus controls, Unity rendering engine, and tactical instructor station.',
-        customer: 'Ministry of Defense / Armored Directorate',
-        projectManagerId: currentUser.id,
-        department: 'Defense Simulation',
-        startDate: '2026-09-01',
-        endDate: '2026-12-30',
-        priority: 'Critical',
+        name: projectName,
+        description: `AI-Synthesized multi-stream engineering program generated from requirements: "${prompt}"`,
+        customer: 'Enterprise Client',
+        projectManagerId: currentUser?.id || 'usr-admin',
+        department: 'Engineering & Simulation',
+        startDate: new Date().toISOString().split('T')[0],
+        endDate: new Date(Date.now() + 120 * 86400000).toISOString().split('T')[0],
+        priority: 'High',
         status: 'Active',
-        budgetINR: 54000000, // ₹5,40,00,000 (5.4 Crores INR)
+        budgetINR: 35000000, // ₹3.5 Crores INR
         gstPercentage: 18,
         currency: 'INR',
         methodology: 'Hybrid',

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useApp } from '../../context/AppContext';
 import { Badge } from '../common/Badge';
 import {
   ShieldCheck,
@@ -29,34 +30,23 @@ export const GoogleOAuthModal: React.FC<GoogleOAuthModalProps> = ({
   onSuccess,
   companyDomain,
 }) => {
+  const { users } = useApp();
   const [googleEmail, setGoogleEmail] = useState('');
   const [googleName, setGoogleName] = useState('');
-  const [googleAvatarUrl, setGoogleAvatarUrl] = useState('');
   const [clientId, setClientId] = useState(() => localStorage.getItem('google_client_id') || '');
   const [isTokenClientLoading, setIsTokenClientLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
-  const [activeView, setActiveView] = useState<'account_picker' | 'manual_google' | 'configure_client'>('account_picker');
+  const [activeView, setActiveView] = useState<'input' | 'configure_client'>('input');
 
   if (!isOpen) return null;
 
-  // 1. One-Click Google Workspace Login
-  const handleSelectAccount = (account: { name: string; email: string; avatar: string }) => {
-    onSuccess({
-      id: `google-uid-${account.email.replace(/[@.]/g, '-')}`,
-      name: account.name,
-      email: account.email,
-      imageUrl: account.avatar,
-    });
-    onClose();
-  };
-
-  // 2. Custom Google Email Login
-  const handleManualGoogleSubmit = (e: React.FormEvent) => {
+  // 1. Direct Google SSO
+  const handleGoogleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
 
     if (!googleEmail.trim()) {
-      setErrorMsg('Please enter a valid Google email.');
+      setErrorMsg('Please enter a valid Google corporate email.');
       return;
     }
 
@@ -67,9 +57,7 @@ export const GoogleOAuthModal: React.FC<GoogleOAuthModalProps> = ({
         .split('@')[0]
         .replace('.', ' ')
         .replace(/(^\w|\s\w)/g, m => m.toUpperCase());
-    const avatarVal =
-      googleAvatarUrl.trim() ||
-      `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(nameVal)}`;
+    const avatarVal = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(nameVal)}`;
 
     onSuccess({
       id: `google-${Date.now()}`,
@@ -80,11 +68,22 @@ export const GoogleOAuthModal: React.FC<GoogleOAuthModalProps> = ({
     onClose();
   };
 
+  // 2. Select an existing registered user
+  const handleSelectRegisteredUser = (u: any) => {
+    onSuccess({
+      id: u.id,
+      name: u.name,
+      email: u.email,
+      imageUrl: u.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(u.name)}`,
+    });
+    onClose();
+  };
+
   // 3. Live Google Cloud OAuth2 Pop-up
   const handleTriggerRealOAuth = () => {
     if (!clientId.trim()) {
       setErrorMsg(
-        'To open a live Google accounts.google.com popup, please enter your registered Google Cloud OAuth Client ID in "Config Client ID" below.'
+        'To open a live Google popup, please enter your registered Google Cloud OAuth Client ID in "Config Client ID" below.'
       );
       return;
     }
@@ -138,7 +137,6 @@ export const GoogleOAuthModal: React.FC<GoogleOAuthModalProps> = ({
         tokenClient.requestAccessToken();
       } else {
         setIsTokenClientLoading(false);
-        setActiveView('manual_google');
       }
     } catch (err: any) {
       setIsTokenClientLoading(false);
@@ -149,13 +147,13 @@ export const GoogleOAuthModal: React.FC<GoogleOAuthModalProps> = ({
   const handleSaveClientId = (e: React.FormEvent) => {
     e.preventDefault();
     localStorage.setItem('google_client_id', clientId.trim());
-    setActiveView('account_picker');
-    setErrorMsg('Client ID saved! You can now test live OAuth popup.');
+    setActiveView('input');
+    setErrorMsg('Client ID saved!');
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="w-full max-w-lg bg-[#090f1d] border border-slate-800 rounded-3xl shadow-2xl p-6 sm:p-7 relative space-y-5 animate-in zoom-in-95 duration-200">
+      <div className="w-full max-w-md bg-[#090f1d] border border-slate-800 rounded-3xl shadow-2xl p-6 sm:p-7 relative space-y-5 animate-in zoom-in-95 duration-200">
         {/* Close Button */}
         <button
           onClick={onClose}
@@ -189,7 +187,7 @@ export const GoogleOAuthModal: React.FC<GoogleOAuthModalProps> = ({
           <div>
             <h3 className="text-base font-extrabold text-white">Google Workspace SSO</h3>
             <p className="text-xs text-slate-400 font-mono">
-              OAuth 2.0 • Domain Verified (@{companyDomain})
+              OAuth 2.0 Verification
             </p>
           </div>
         </div>
@@ -202,170 +200,113 @@ export const GoogleOAuthModal: React.FC<GoogleOAuthModalProps> = ({
           </div>
         )}
 
-        {/* VIEW 1: GOOGLE ACCOUNT PICKER */}
-        {activeView === 'account_picker' && (
+        {/* VIEW 1: DYNAMIC INPUT & REGISTERED ACCOUNTS */}
+        {activeView === 'input' && (
           <div className="space-y-4 text-xs">
-            <p className="text-slate-300">
-              Select your verified enterprise Google account to sign in immediately:
-            </p>
-
-            {/* Account List */}
-            <div className="space-y-2.5">
-              {/* Ambu Kiran Kumar Reddy (Primary Account) */}
-              <button
-                type="button"
-                onClick={() =>
-                  handleSelectAccount({
-                    name: 'Ambu Kiran Kumar Reddy',
-                    email: 'ambukiran@edgeforce.in',
-                    avatar:
-                      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-                  })
-                }
-                className="w-full p-3.5 rounded-2xl bg-slate-950 border border-brand-500/50 hover:border-brand-500 hover:bg-slate-900/90 text-left transition-all flex items-center justify-between group shadow-sm"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="relative">
-                    <img
-                      src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
-                      alt="Ambu Kiran"
-                      className="w-10 h-10 rounded-2xl object-cover ring-2 ring-brand-500/40"
-                    />
-                    <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-white flex items-center justify-center shadow-sm">
-                      <svg className="w-2.5 h-2.5" viewBox="0 0 24 24">
-                        <path
-                          fill="#4285F4"
-                          d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+            {/* If registered users exist, offer 1-click select */}
+            {users.length > 0 && (
+              <div className="space-y-2">
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+                  Registered Accounts:
+                </span>
+                <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                  {users.map(u => (
+                    <button
+                      key={u.id}
+                      type="button"
+                      onClick={() => handleSelectRegisteredUser(u)}
+                      className="w-full p-2.5 rounded-xl bg-slate-950 border border-slate-800 hover:border-brand-500 hover:bg-slate-900 text-left transition-all flex items-center justify-between group"
+                    >
+                      <div className="flex items-center gap-2.5 truncate">
+                        <img
+                          src={u.avatar}
+                          alt={u.name}
+                          className="w-7 h-7 rounded-xl object-cover ring-1 ring-brand-500/30 shrink-0"
                         />
-                      </svg>
-                    </div>
-                  </div>
-                  <div>
-                    <div className="font-extrabold text-white flex items-center gap-1.5">
-                      <span>Ambu Kiran Kumar Reddy</span>
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                    </div>
-                    <div className="text-slate-400 font-mono text-[11px]">
-                      ambukiran@edgeforce.in
-                    </div>
-                    <Badge variant="purple" size="sm">
-                      Super Admin & CTO
-                    </Badge>
-                  </div>
+                        <div className="truncate">
+                          <div className="font-bold text-white text-xs truncate">{u.name}</div>
+                          <div className="text-slate-400 font-mono text-[10px] truncate">{u.email}</div>
+                        </div>
+                      </div>
+                      <Badge variant="purple" size="sm">
+                        {u.role}
+                      </Badge>
+                    </button>
+                  ))}
                 </div>
-                <ArrowRight className="w-4 h-4 text-brand-400 group-hover:translate-x-1 transition-transform" />
-              </button>
-
-              {/* Rajesh Varma */}
-              <button
-                type="button"
-                onClick={() =>
-                  handleSelectAccount({
-                    name: 'Rajesh Varma',
-                    email: 'rajesh.varma@edgeforce.in',
-                    avatar:
-                      'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
-                  })
-                }
-                className="w-full p-3 rounded-2xl bg-slate-950 border border-slate-800 hover:border-slate-700 hover:bg-slate-900/60 text-left transition-all flex items-center justify-between group"
-              >
-                <div className="flex items-center gap-3">
-                  <img
-                    src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80"
-                    alt="Rajesh Varma"
-                    className="w-9 h-9 rounded-2xl object-cover ring-1 ring-slate-700"
-                  />
-                  <div>
-                    <div className="font-bold text-slate-200">Rajesh Varma</div>
-                    <div className="text-slate-400 font-mono text-[11px]">
-                      rajesh.varma@edgeforce.in
-                    </div>
-                    <span className="text-[10px] text-slate-500 font-medium">
-                      Managing Director & Admin
-                    </span>
-                  </div>
+                <div className="flex items-center gap-3 text-[10px] text-slate-600 py-1">
+                  <div className="flex-1 h-px bg-slate-800" />
+                  <span>OR ENTER GOOGLE EMAIL</span>
+                  <div className="flex-1 h-px bg-slate-800" />
                 </div>
-                <ArrowRight className="w-4 h-4 text-slate-500 group-hover:translate-x-1 transition-transform" />
-              </button>
-            </div>
-
-            {/* Alternative Options */}
-            <div className="pt-2 border-t border-slate-800/80 space-y-2">
-              <button
-                type="button"
-                onClick={() => setActiveView('manual_google')}
-                className="w-full py-2.5 px-3 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 font-semibold flex items-center justify-center gap-2 transition-colors"
-              >
-                <Mail className="w-4 h-4 text-brand-400" />
-                <span>Use Another Google Account</span>
-              </button>
-
-              <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1">
-                <span>Google Cloud OAuth Setup:</span>
-                <button
-                  type="button"
-                  onClick={() => setActiveView('configure_client')}
-                  className="text-brand-400 hover:text-brand-300 font-mono"
-                >
-                  Configure Cloud Client ID
-                </button>
               </div>
+            )}
+
+            {/* Email Input Form */}
+            <form onSubmit={handleGoogleSubmit} className="space-y-3">
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">
+                  Google Corporate Email *
+                </label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
+                  <input
+                    type="email"
+                    required
+                    placeholder="name@company.com"
+                    value={googleEmail}
+                    onChange={e => setGoogleEmail(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-500"
+                    autoFocus
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">
+                  Full Name (Optional)
+                </label>
+                <div className="relative">
+                  <User className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
+                  <input
+                    type="text"
+                    placeholder="Your Name"
+                    value={googleName}
+                    onChange={e => setGoogleName(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-500"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                className="w-full py-3 rounded-2xl bg-gradient-to-r from-brand-600 to-purple-600 hover:from-brand-500 hover:to-purple-500 text-white font-extrabold shadow-glow-brand flex items-center justify-center gap-2 transition-all active:scale-[0.99]"
+              >
+                <span>Continue with Google</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </form>
+
+            <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-500">
+              <button
+                type="button"
+                onClick={handleTriggerRealOAuth}
+                className="text-slate-400 hover:text-slate-200"
+              >
+                Trigger Live OAuth Popup
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveView('configure_client')}
+                className="text-brand-400 hover:text-brand-300 font-mono"
+              >
+                Config Client ID
+              </button>
             </div>
           </div>
         )}
 
-        {/* VIEW 2: MANUAL GOOGLE ACCOUNT INPUT */}
-        {activeView === 'manual_google' && (
-          <form onSubmit={handleManualGoogleSubmit} className="space-y-4 text-xs">
-            <div className="space-y-1">
-              <label className="block text-slate-300 font-semibold">Your Google Email *</label>
-              <div className="relative">
-                <Mail className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
-                <input
-                  type="email"
-                  required
-                  placeholder="ambukiran@edgeforce.in"
-                  value={googleEmail}
-                  onChange={e => setGoogleEmail(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-500"
-                  autoFocus
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <label className="block text-slate-300 font-semibold">Google Account Name</label>
-              <div className="relative">
-                <User className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
-                <input
-                  type="text"
-                  placeholder="e.g. Ambu Kiran Kumar Reddy"
-                  value={googleName}
-                  onChange={e => setGoogleName(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-500"
-                />
-              </div>
-            </div>
-
-            <div className="flex gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setActiveView('account_picker')}
-                className="flex-1 py-2.5 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-800"
-              >
-                Back
-              </button>
-              <button
-                type="submit"
-                className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-brand-600 to-purple-600 hover:from-brand-500 hover:to-purple-500 text-white font-extrabold shadow-glow-brand"
-              >
-                Sign In with Google
-              </button>
-            </div>
-          </form>
-        )}
-
-        {/* VIEW 3: CONFIGURE GOOGLE CLOUD CLIENT ID */}
+        {/* VIEW 2: CONFIGURE CLIENT ID */}
         {activeView === 'configure_client' && (
           <form onSubmit={handleSaveClientId} className="space-y-4 text-xs">
             <div className="space-y-1">
@@ -374,26 +315,25 @@ export const GoogleOAuthModal: React.FC<GoogleOAuthModalProps> = ({
               </label>
               <input
                 type="text"
-                placeholder="e.g. 1234567890-xyz.apps.googleusercontent.com"
+                placeholder="YOUR_CLIENT_ID.apps.googleusercontent.com"
                 value={clientId}
                 onChange={e => setClientId(e.target.value)}
                 className="w-full p-2.5 bg-slate-950 border border-slate-700 rounded-xl text-slate-100 font-mono focus:outline-none focus:border-brand-500"
                 autoFocus
               />
               <p className="text-[11px] text-slate-400 mt-1">
-                To eliminate the Google 401 error when using Google's live server popup, create a
-                Web Application in <strong>Google Cloud Console &gt; Credentials</strong> and add{' '}
+                To use Google's native popup, create a Web Application in{' '}
+                <strong>Google Cloud Console &gt; Credentials</strong> with Authorized Origin{' '}
                 <code className="text-brand-300 font-mono">
                   https://ambukirankumarreddy.github.io
-                </code>{' '}
-                to Authorized JavaScript Origins.
+                </code>.
               </p>
             </div>
 
             <div className="flex gap-2">
               <button
                 type="button"
-                onClick={() => setActiveView('account_picker')}
+                onClick={() => setActiveView('input')}
                 className="flex-1 py-2.5 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-800"
               >
                 Back

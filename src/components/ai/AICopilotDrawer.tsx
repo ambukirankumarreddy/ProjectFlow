@@ -21,7 +21,7 @@ interface AICopilotDrawerProps {
 }
 
 export const AICopilotDrawer: React.FC<AICopilotDrawerProps> = ({ isOpen, onClose }) => {
-  const { selectedProject, tasks, users, budget, bomItems } = useApp();
+  const { selectedProject, projects, tasks, users, budget, bomItems } = useApp();
 
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<
@@ -68,23 +68,45 @@ export const AICopilotDrawer: React.FC<AICopilotDrawerProps> = ({ isOpen, onClos
       let reply = '';
       const q = text.toLowerCase();
 
-      if (q.includes('blocking') || q.includes('blocked')) {
-        reply = `**Current Blocker Detected:**\n\n- **Task:** \`BMP2-104\` (Hydraulic Hexapod Motion Platform Servo Controller Calibration)\n- **Discipline:** Mechanical Engineering (Lead: Marcus Thorne)\n- **Root Cause:** Proportional valve shipment from Moog Controls is in transit (ETA: Aug 22).\n- **Mitigation:** Wiring harness continuity testing has been fast-tracked so integration can begin the moment the package arrives.`;
-      } else if (q.includes('overdue') || q.includes('risk')) {
-        reply = `**Overdue & Risk Analysis for ${selectedProject?.key}:**\n\n1. **High Risk (Critical Path):** Motion Base servo calibration has 0 days of buffer slack.\n2. **Thermal Shader Optics (\`BMP2-106\`):** Depth sorting on synthetic foliage LOD needs vertex shader review.\n3. Overall Project Risk Score is currently **${selectedProject?.riskScore || 42}%**.`;
-      } else if (q.includes('overloaded') || q.includes('workload')) {
-        reply = `**Team Workload Distribution:**\n\n- **Vikram Malhotra (Unity Architect):** 122% Capacity (Ballistics + Shader pipeline). Recommended to reassign shader tasks.\n- **David Chen (Embedded Systems):** 95% Capacity (CAN bus drivers).\n- **Elena Rostova (3D Art):** 75% Capacity (Available for UI assets).`;
-      } else if (q.includes('hil') || q.includes('integration')) {
-        reply = `**Pre-Requisites for HIL Integration Milestone:**\n\n1. ✅ CAN Bus STM32 Driver (200Hz packet rate verified).\n2. ✅ 30mm 2A42 Ballistic equations certified.\n3. ⏳ 24V MIL-DTL-38999 wiring harness loom continuity check (90% complete).\n4. ❌ 180-bar hydraulic bench test of proportional valves (Blocked until Aug 22).`;
-      } else if (q.includes('standup') || q.includes('daily')) {
-        reply = `**AI-Drafted Standup Brief:**\n\n- **Yesterday:** Finalized Runge-Kutta 4th order numerical ballistics curves in C# and tested against military dispersion standards.\n- **Today:** Resolving depth buffer sorting on BPK-1-42 thermal sight shaders; sync with David Chen on CAN bus joystick bridge.\n- **Blockers:** Awaiting Moog servo valve delivery for motion base rig.`;
-      } else {
-        reply = `I have analyzed your request against the active **${selectedProject?.name}** program. All **9 workstreams** (Software, 3D Modelling, Hardware, Mechanical, Electrical, Procurement, Integration, Testing, Deployment) are synchronized. 
+      const blockedTasks = tasks.filter(t => t.status === 'Blocked' || t.priority === 'Critical');
+      const inProgressTasks = tasks.filter(t => t.status === 'In Progress');
 
-Key Health Indicators:
-- **Progress:** ${selectedProject?.progress}%
-- **Budget Spent:** ${budget.actualSpendINR ? (budget.actualSpendINR / 100000).toFixed(1) + ' Lakhs' : '₹0'} of ${budget.totalBudgetINR ? (budget.totalBudgetINR / 10000000).toFixed(2) + ' Crores' : '₹0'}
-- **Active Sprint:** Sprint 2 (36 / 54 pts delivered)`;
+      if (q.includes('blocking') || q.includes('blocked')) {
+        if (blockedTasks.length > 0) {
+          reply = `**Current Blockers & High Risk Items Detected (${blockedTasks.length}):**\n\n` +
+            blockedTasks.map(t => `- **Task:** \`${t.key}\` (${t.title})\n  - **Priority:** ${t.priority} | **Assignee:** ${users.find(u => u.id === t.assigneeId)?.name || 'Unassigned'}`).join('\n');
+        } else {
+          reply = `✅ **Zero Blockers Detected:** All tasks are currently flowing normally across active workstreams without dependency blocks.`;
+        }
+      } else if (q.includes('overdue') || q.includes('risk')) {
+        reply = `**Risk Analysis for ${selectedProject?.name || 'Workspace'}:**\n\n` +
+          `- **Total Tracked Tasks:** ${tasks.length}\n` +
+          `- **In Progress:** ${inProgressTasks.length}\n` +
+          `- **Critical Priority:** ${blockedTasks.length}\n` +
+          `- **Overall Project Risk Score:** ${selectedProject?.riskScore || 15}%\n\n` +
+          (tasks.length === 0 ? `*Tip: Create tasks in Kanban or Gantt to enable automated risk forecasting.*` : `*Delivery timeline is tracking to schedule.*`);
+      } else if (q.includes('overloaded') || q.includes('workload')) {
+        if (users.length > 0) {
+          reply = `**Team Workload Distribution (${users.length} members):**\n\n` +
+            users.map(u => {
+              const userTasks = tasks.filter(t => t.assigneeId === u.id);
+              return `- **${u.name}** (${u.role}): ${userTasks.length} assigned tasks (${userTasks.reduce((acc, t) => acc + (t.estimatedHours || 0), 0)} hrs total)`;
+            }).join('\n');
+        } else {
+          reply = `No team members registered yet. You can invite team members in the Admin or Manpower Hub.`;
+        }
+      } else if (q.includes('standup') || q.includes('daily')) {
+        reply = `**AI-Synthesized Daily Standup Brief:**\n\n` +
+          `- **Active Tasks in Flight:** ${inProgressTasks.length > 0 ? inProgressTasks.map(t => `\`${t.key}\` (${t.title})`).slice(0, 3).join(', ') : 'None in progress'}\n` +
+          `- **Completed Recently:** ${tasks.filter(t => t.status === 'Completed').length} tasks done\n` +
+          `- **Immediate Focus:** Coordinate sprint milestone deliverables and test coverage.`;
+      } else {
+        reply = `I have analyzed the **${selectedProject?.name || 'Enterprise Workspace'}** program.\n\n` +
+          `- **Active Projects:** ${projects.length}\n` +
+          `- **Work Items:** ${tasks.length} tasks\n` +
+          `- **Team Size:** ${users.length} members\n` +
+          `- **Allocated Budget:** ₹${(budget.totalBudgetINR || 0).toLocaleString('en-IN')}\n\n` +
+          `How can I assist with your planning or resource optimization today?`;
       }
 
       setMessages(prev => [

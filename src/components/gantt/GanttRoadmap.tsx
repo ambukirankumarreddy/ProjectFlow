@@ -143,11 +143,21 @@ export const GanttRoadmap: React.FC = () => {
           <div className="flex items-center gap-2.5">
             <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
             <span>
-              <strong>Critical Path Bottleneck:</strong> "Hydraulic Hexapod Motion Platform Servo Controller Calibration" (BMP2-104) is on the critical chain. Any further delay pushes Milestone 3 (Integrated HIL Firing Range Acceptance).
+              {tasks.some(t => t.priority === 'Critical' && t.status !== 'Completed') ? (
+                <>
+                  <strong>Critical Path Bottleneck:</strong> "
+                  {tasks.find(t => t.priority === 'Critical' && t.status !== 'Completed')?.title}" (
+                  {tasks.find(t => t.priority === 'Critical' && t.status !== 'Completed')?.key}) is on the critical chain. Immediate resolution advised.
+                </>
+              ) : (
+                <>
+                  <strong>Critical Chain Status:</strong> All active milestones and tasks are currently tracking within target delivery windows.
+                </>
+              )}
             </span>
           </div>
           <span className="px-2 py-0.5 rounded bg-rose-500/30 text-rose-200 font-mono text-[10px] font-bold">
-            Slack: 0 Days
+            {tasks.some(t => t.priority === 'Critical' && t.status !== 'Completed') ? 'Slack: 0 Days' : 'Buffer Nominal'}
           </span>
         </div>
       )}
@@ -176,10 +186,7 @@ export const GanttRoadmap: React.FC = () => {
           {filteredTasks.map(task => {
             const assignee = users.find(u => u.id === task.assigneeId);
             const pos = getPositionStyles(task.startDate, task.dueDate);
-            const isCritical =
-              task.priority === 'Critical' ||
-              task.key === 'BMP2-104' ||
-              task.key === 'BMP2-102';
+            const isCritical = task.priority === 'Critical';
 
             return (
               <div key={task.id} className="flex hover:bg-slate-800/30 transition-colors group">

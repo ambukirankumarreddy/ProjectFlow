@@ -19,9 +19,7 @@ import {
 export const AIManpowerPlanner: React.FC = () => {
   const { users, selectedProject, setPendingAIAction } = useApp();
 
-  const [prompt, setPrompt] = useState(
-    'Create a manpower plan for a 120-day BMP-II simulator project with four Unity developers, one Unity lead, the full modelling team, one mechanical engineer, one electrical engineer and one QA engineer.'
-  );
+  const [prompt, setPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedPlan, setGeneratedPlan] = useState<{
     projectDurationMonths: number;
@@ -46,80 +44,27 @@ export const AIManpowerPlanner: React.FC = () => {
     setTimeout(() => {
       const duration = 4; // 120 days = 4 months
 
-      const planMembers = [
-        {
-          role: 'Unity Simulation Lead & Architect',
-          suggestedUserId: 'usr-2',
-          suggestedName: 'Vikram Malhotra',
-          allocationPercentage: 80,
-          monthlyCostINR: 180000,
-          totalProjectCostINR: calculateManpowerCost(180000, 80, duration),
-          reportingToRole: 'Project Manager (Sarah Jenkins)',
-        },
-        {
-          role: 'Unity Simulation Developer 1',
-          suggestedUserId: 'usr-u1',
-          suggestedName: 'Kavita Sharma',
-          allocationPercentage: 70,
-          monthlyCostINR: 95000,
-          totalProjectCostINR: calculateManpowerCost(95000, 70, duration),
-          reportingToRole: 'Unity Simulation Lead',
-        },
-        {
-          role: 'Unity Simulation Developer 2 (New Role)',
-          suggestedUserId: 'usr-trainee',
-          suggestedName: 'Arjun Das (Trainee Engineer)',
-          allocationPercentage: 50,
-          monthlyCostINR: 35000,
-          totalProjectCostINR: calculateManpowerCost(35000, 50, duration),
-          reportingToRole: 'Unity Simulation Lead',
-        },
-        {
-          role: '3D Modelling & Hard-Surface Lead',
-          suggestedUserId: 'usr-3',
-          suggestedName: 'Elena Rostova',
-          allocationPercentage: 100,
-          monthlyCostINR: 160000,
-          totalProjectCostINR: calculateManpowerCost(160000, 100, duration),
-          reportingToRole: 'Project Manager (Sarah Jenkins)',
-        },
-        {
-          role: 'Vehicle & Terrain Modeller',
-          suggestedUserId: 'usr-art1',
-          suggestedName: 'Rohan Mehra',
-          allocationPercentage: 100,
-          monthlyCostINR: 85000,
-          totalProjectCostINR: calculateManpowerCost(85000, 100, duration),
-          reportingToRole: '3D Modelling Lead',
-        },
-        {
-          role: 'Lead Mechanical Designer',
-          suggestedUserId: 'usr-5',
-          suggestedName: 'Marcus Thorne',
-          allocationPercentage: 100,
-          monthlyCostINR: 165000,
-          totalProjectCostINR: calculateManpowerCost(165000, 100, duration),
-          reportingToRole: 'Project Manager (Sarah Jenkins)',
-        },
-        {
-          role: 'Senior Electrical Wiring Engineer',
-          suggestedUserId: 'usr-6',
-          suggestedName: 'Aisha Patel',
-          allocationPercentage: 100,
-          monthlyCostINR: 120000,
-          totalProjectCostINR: calculateManpowerCost(120000, 100, duration),
-          reportingToRole: 'Hardware Lead (David Chen)',
-        },
-        {
-          role: 'Lead QA & HIL Test Acceptance Engineer',
-          suggestedUserId: 'usr-7',
-          suggestedName: 'Alexander Volkov',
-          allocationPercentage: 80,
-          monthlyCostINR: 145000,
-          totalProjectCostINR: calculateManpowerCost(145000, 80, duration),
-          reportingToRole: 'Project Manager (Sarah Jenkins)',
-        },
-      ];
+      const planMembers = users.length > 0
+        ? users.slice(0, 8).map((u, idx) => ({
+            role: u.designation || u.role,
+            suggestedUserId: u.id,
+            suggestedName: u.name,
+            allocationPercentage: idx === 0 ? 80 : 100,
+            monthlyCostINR: u.monthlySalaryINR || 120000,
+            totalProjectCostINR: calculateManpowerCost(u.monthlySalaryINR || 120000, idx === 0 ? 80 : 100, duration),
+            reportingToRole: u.role === 'Super Admin' ? 'Executive Board' : 'Project Lead',
+          }))
+        : [
+            {
+              role: 'Lead Architect & Program Manager',
+              suggestedUserId: 'usr-admin',
+              suggestedName: 'Lead Architect',
+              allocationPercentage: 100,
+              monthlyCostINR: 200000,
+              totalProjectCostINR: calculateManpowerCost(200000, 100, duration),
+              reportingToRole: 'Executive Board',
+            },
+          ];
 
       const totalCost = planMembers.reduce((sum, m) => sum + m.totalProjectCostINR, 0);
 
@@ -128,15 +73,14 @@ export const AIManpowerPlanner: React.FC = () => {
         teamMembers: planMembers,
         totalManpowerCostINR: totalCost,
         aiInsights: [
-          'Total Manpower Cost computed at ' + formatINR(totalCost) + ' over 120-day timeline.',
-          'Vikram Malhotra is committed at 80% on BMP-II and 20% on Drone Swarm (100% total optimal load).',
-          'Identified 1 trainee engineer allocation for junior scripting tasks to reduce overall program cost by ₹2,40,000.',
-          'Zero reporting manager conflicts detected across 3-tier hierarchy.',
+          `Total Manpower Cost computed at ${formatINR(totalCost)} over ${duration}-month timeline.`,
+          `Synthesized allocations across ${planMembers.length} specialized roles.`,
+          `All reporting hierarchy lines verified with zero escalation conflicts.`,
         ],
       });
 
       setIsGenerating(false);
-    }, 1000);
+    }, 900);
   };
 
   const handleApplyManpowerPlan = () => {

@@ -208,8 +208,8 @@ export const OrgOnboardingWizard: React.FC = () => {
           <div className="space-y-4 animate-in fade-in text-xs">
             <h3 className="text-base font-bold text-slate-100">
               {step === 6 && 'Step 6: Team Roster & Role Permissions'}
-              {step === 7 && 'Step 7: First Program: BMP-II Combat Simulator'}
-              {step === 8 && 'Step 8: Program Template: Multi-Disciplinary Simulator'}
+              {step === 7 && 'Step 7: First Enterprise Program Setup'}
+              {step === 8 && 'Step 8: Program Template: Multi-Disciplinary Workstream'}
               {step === 9 && 'Step 9: Agile Workflow Engine: Backlog → Selected → In Progress → Review → Testing → Approved → Done'}
             </h3>
             <p className="text-slate-300 leading-relaxed">

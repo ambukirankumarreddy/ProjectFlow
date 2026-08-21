@@ -145,21 +145,30 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     setIsEmojiPickerOpen(false);
   };
 
-  const handleMockAttachment = () => {
-    const sampleAttachment: MessageAttachment = {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const attachment: MessageAttachment = {
       id: `att-${Date.now()}`,
-      name: 'BMP2_Ballistics_Telemetry_Data.pdf',
-      type: 'pdf',
-      sizeBytes: 1850000,
-      url: '#',
+      name: file.name,
+      type: file.type.includes('image') ? 'image' : file.type.includes('pdf') ? 'pdf' : 'document',
+      sizeBytes: file.size,
+      url: URL.createObjectURL(file),
     };
 
     sendMessage(
       conversation.id,
-      'Shared attachment: BMP2_Ballistics_Telemetry_Data.pdf',
-      [sampleAttachment],
+      `Shared file: ${file.name}`,
+      [attachment],
       replyingTo?.id
     );
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const handleSendVoiceNote = (voiceNote: VoiceNote) => {
@@ -732,12 +741,20 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           />
         ) : (
           <form onSubmit={handleSend} className="flex items-center gap-2">
+            {/* Hidden File Input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              onChange={handleFileUpload}
+              className="hidden"
+            />
+
             {/* Attachment Button */}
             <button
               type="button"
-              onClick={handleMockAttachment}
+              onClick={() => fileInputRef.current?.click()}
               className="p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-slate-200 transition-colors"
-              title="Attach Document or Schematics"
+              title="Attach File or Document"
             >
               <Paperclip className="w-4 h-4" />
             </button>

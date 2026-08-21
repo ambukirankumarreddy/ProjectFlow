@@ -102,7 +102,10 @@ export const ResourceAllocation: React.FC = () => {
               </Badge>
             </div>
             <p className="text-xs text-slate-300 mt-1">
-              <strong>Recommendation:</strong> Vikram Malhotra (Unity Architect) is at 122% capacity across ballistics and thermal optics. Reassign the "Thermal Optics Reticle Shader" (BMP2-106, 5 pts) to Elena Rostova or secondary Unity developer to prevent sprint delivery slip.
+              <strong>Recommendation:</strong>{' '}
+              {overloadedCount > 0
+                ? `${userWorkload.find(u => u.isOverloaded)?.name} is currently allocated with high task load (${userWorkload.find(u => u.isOverloaded)?.assignedTasksCount} tasks). Consider rebalancing tasks to maintain sprint delivery velocity.`
+                : 'All team members currently operate within nominal capacity limits. Resource distribution is optimal.'}
             </p>
           </div>
         </div>

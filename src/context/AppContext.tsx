@@ -1286,17 +1286,45 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const p = userPrompt.toLowerCase();
     let replyText = '';
 
-    if (p.includes('overdue') || p.includes('late')) {
-      const overdueList = tasks.filter(t => t.status === 'Blocked' || t.priority === 'Critical');
-      replyText = `**FlowPilot Overdue & High-Risk Tasks Analysis:**\n\n- **BMP2-104 (Hydraulic Platform):** Blocked pending Moog Series 760 delivery.\n- **BMP2-102 (Ballistics Integrator):** Critical path testing ongoing.\n\nEscalation status: Team Lead & Hardware Head alerted.`;
+    const overdueList = tasks.filter(t => t.status === 'Blocked' || t.priority === 'Critical');
+    const inProgressTasks = tasks.filter(t => t.status === 'In Progress');
+    const totalMonthlySalary = users.reduce((acc, u) => acc + (u.monthlySalaryINR || 0), 0);
+
+    if (p.includes('overdue') || p.includes('late') || p.includes('blocked')) {
+      if (overdueList.length > 0) {
+        replyText = `**FlowPilot Overdue & High-Risk Tasks Analysis:**\n\n` +
+          overdueList.map(t => `- **${t.key} (${t.title}):** ${t.status} | Priority: ${t.priority}`).join('\n');
+      } else {
+        replyText = `✅ **Zero Overdue or Blocked Tasks:** All work items are currently on schedule across active workstreams.`;
+      }
     } else if (p.includes('cost') || p.includes('rupee') || p.includes('manpower') || p.includes('salary')) {
-      replyText = `**Current Monthly Manpower Expenditure (INR):**\n\n- **Software & Simulation (3 Devs):** ₹3,10,000 / month\n- **3D Art & Terrain (2 Artists):** ₹2,45,000 / month\n- **Hardware & Embedded (2 Engineers):** ₹2,95,000 / month\n- **Mechanical & Motion (1 Lead):** ₹1,65,000 / month\n- **QA & HIL (1 Lead):** ₹1,45,000 / month\n- **Delivery Leadership:** ₹2,20,000 / month\n\n💰 **Total Program Manpower Run-Rate:** **₹13,80,000 / month** (₹1.38 Lakhs/mo under target cap).`;
+      replyText = `**Current Monthly Manpower Expenditure (INR):**\n\n` +
+        `- **Active Team Size:** ${users.length} specialist(s)\n` +
+        `- **Total Monthly Payroll Run-Rate:** ₹${totalMonthlySalary.toLocaleString('en-IN')} / month\n` +
+        `- **Annualized Manpower Burn:** ₹${(totalMonthlySalary * 12).toLocaleString('en-IN')} / year\n\n` +
+        `All employee cost metrics and hourly billable rates are synchronized with organization settings.`;
     } else if (p.includes('overload') || p.includes('capacity')) {
-      replyText = `**Multi-Project Workload Report:**\n\n- **Vikram Malhotra:** 100% (80% BMP-II + 20% Drone Swarm) 🟡 High\n- **Kavita Sharma:** 100% (70% BMP-II + 30% Drone Swarm) 🟡 High\n- **Elena Rostova:** 100% (100% BMP-II) 🟢 Optimal\n\nRecommendation: Rebalance Drone Swarm shader optimization to Trainee Arjun Das.`;
+      if (users.length > 0) {
+        replyText = `**Workforce Allocation & Capacity Summary:**\n\n` +
+          users.map(u => {
+            const userTasks = tasks.filter(t => t.assigneeId === u.id);
+            return `- **${u.name}** (${u.role}): ${userTasks.length} task(s) allocated (${userTasks.reduce((acc, t) => acc + (t.estimatedHours || 0), 0)} hrs)`;
+          }).join('\n');
+      } else {
+        replyText = `No team members registered yet. You can invite employees to track workload distribution.`;
+      }
     } else if (p.includes('summarize') || p.includes('standup')) {
-      replyText = `**Daily Stand-Up Synthesis for Delivery Head Sarah Jenkins:**\n\n1. **Completed:** C# 4th order ballistics trajectory verified with 0.3 mil military accuracy.\n2. **In Progress:** 24V MIL-DTL wiring harness continuity testing.\n3. **Blockers:** Moog proportional valve delivery tracked for Aug 22 (Bengaluru Cargo Hub).\n4. **Upcoming Milestone:** Full Cockpit HIL Integration (Sep 1).`;
+      replyText = `**Daily Stand-Up Synthesis for ${currentUser.name}:**\n\n` +
+        `1. **Active In Flight:** ${inProgressTasks.length > 0 ? inProgressTasks.map(t => `${t.key} - ${t.title}`).slice(0, 3).join(', ') : 'None in progress'}\n` +
+        `2. **Completed:** ${tasks.filter(t => t.status === 'Completed').length} tasks completed to date.\n` +
+        `3. **Immediate Priority:** Progress sprint backlog and complete scheduled deliverables.`;
     } else {
-      replyText = `I have processed your query across the **Edgeforce Defense Simulation Knowledge Graph**.\n\nAll **9 workstreams** are active. Program Budget is healthy at **₹5.40 Crores (+18% GST)**. You can ask me to draft announcements, check employee reporting trees, or convert chat threads into tasks!`;
+      replyText = `I have analyzed the **${orgSettings.name || 'Enterprise Workspace'}** program.\n\n` +
+        `- **Projects:** ${projects.length} active\n` +
+        `- **Work Items:** ${tasks.length} tasks\n` +
+        `- **Team Size:** ${users.length} member(s)\n` +
+        `- **Budget:** ₹${(budget.totalBudgetINR || 0).toLocaleString('en-IN')}\n\n` +
+        `Ask me to analyze risks, track budgets, or generate workstream plans!`;
     }
 
     const aiMessage: ChatMessage = {
@@ -1305,7 +1333,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       senderId: 'usr-ai',
       messageType: 'ai_response',
       text: replyText,
-      reactions: [{ emoji: '💡', userIds: ['usr-1'] }],
+      reactions: [{ emoji: '💡', userIds: [currentUser.id] }],
       createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
 
