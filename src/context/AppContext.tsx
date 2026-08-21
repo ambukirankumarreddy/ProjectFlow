@@ -79,7 +79,7 @@ interface AppContextType {
   // Authentication & Session
   isAuthenticated: boolean;
   loginWithEmail: (email: string, password: string, bypass2FA?: boolean) => { success: boolean; message?: string; twoFactorRequired?: boolean; user?: User };
-  loginWithGoogle: () => { success: boolean; message?: string };
+  loginWithGoogle: (googleProfile?: { name?: string; email?: string; imageUrl?: string; id?: string }) => { success: boolean; message?: string };
   registerOrganization: (data: any) => { success: boolean; message?: string };
   registerWithInvite: (data: any) => { success: boolean; message?: string };
   logout: () => void;
@@ -472,7 +472,65 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   // Google SSO Login
-  const loginWithGoogle = () => {
+  const loginWithGoogle = (googleProfile?: { name?: string; email?: string; imageUrl?: string; id?: string }) => {
+    if (googleProfile && googleProfile.email) {
+      // Validate office domain if enforced
+      if (orgSettings.enforceCompanyDomain && !googleProfile.email.toLowerCase().endsWith(`@${orgSettings.companyDomain.toLowerCase()}`)) {
+        return {
+          success: false,
+          message: `Google Account domain does not match corporate domain @${orgSettings.companyDomain}`,
+        };
+      }
+
+      // Find or create matching user
+      let matched = users.find(u => u.email.toLowerCase() === googleProfile.email!.toLowerCase());
+      if (!matched) {
+        matched = {
+          id: `usr-g-${Date.now()}`,
+          employeeId: `EMP-${Math.floor(100 + Math.random() * 900)}`,
+          name: googleProfile.name || 'Google User',
+          email: googleProfile.email,
+          googleEmail: googleProfile.email,
+          isGoogleVerified: true,
+          companyDomain: orgSettings.companyDomain,
+          avatar: googleProfile.imageUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+          role: 'Developer/Member',
+          department: 'Software',
+          designation: 'Specialist Engineer',
+          grade: 'L3 - Specialist',
+          branch: 'Corporate HQ',
+          joiningDate: new Date().toISOString().split('T')[0],
+          employmentType: 'Permanent',
+          skills: ['Engineering'],
+          monthlySalaryINR: 95000,
+          hourlyCostINR: 593,
+          dailyCostINR: 4750,
+          billableRateINR: 1800,
+          availabilityHoursPerWeek: 40,
+          projectAllocations: [],
+          status: 'Active',
+        };
+        setUsers(prev => [...prev, matched!]);
+      } else {
+        matched = {
+          ...matched,
+          avatar: googleProfile.imageUrl || matched.avatar,
+          isGoogleVerified: true,
+          googleEmail: googleProfile.email,
+        };
+        updateUser(matched);
+      }
+
+      setCurrentUser(matched);
+      setActiveRole(matched.role);
+      setIsAuthenticated(true);
+      localStorage.setItem('projectflow_auth', 'true');
+      logAction(`Google SSO Verified: ${matched.name} (${googleProfile.email})`, 'Google OAuth 2.0');
+      audioEngine.playSound('approval_result');
+      return { success: true };
+    }
+
+    // Default Google User Fallback
     const defaultGoogleUser = users.find(u => u.isGoogleVerified) || users[0];
     setCurrentUser(defaultGoogleUser);
     setActiveRole(defaultGoogleUser.role);
@@ -610,11 +668,34 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return { success: true };
   };
 
-  // Sign Out
+  // Sign Out & Google Session Revocation
   const logout = () => {
+    // 1. Google Identity Services / GAPI Sign-out
+    try {
+      if (typeof window !== 'undefined') {
+        const win = window as any;
+        if (win.google?.accounts?.id) {
+          win.google.accounts.id.disableAutoSelect();
+        }
+        if (win.gapi?.auth2) {
+          const auth2 = win.gapi.auth2.getAuthInstance();
+          if (auth2) {
+            auth2.signOut().then(() => {
+              console.log('Google Auth2 user signed out.');
+            });
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Google sign-out warning:', e);
+    }
+
+    // 2. Clear local session tokens & state
     setIsAuthenticated(false);
     localStorage.removeItem('projectflow_auth');
-    logAction(`User signed out: ${currentUser.name}`, 'Authentication');
+    localStorage.removeItem('projectflow_token');
+    logAction(`User signed out: ${currentUser.name} (${currentUser.email})`, 'Authentication');
+    audioEngine.playSound('direct_message');
   };
 
   // Legacy Google Login Simulator

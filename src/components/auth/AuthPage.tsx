@@ -61,7 +61,33 @@ export const AuthPage: React.FC = () => {
   const [empRole, setEmpRole] = useState<UserRole>('Developer/Member');
   const [empReportingManagerId, setEmpReportingManagerId] = useState('');
 
-  // 1. Handle Email/Password Sign-In
+  // 1. Hook onSignIn and Google Identity callback on window
+  React.useEffect(() => {
+    (window as any).onSignIn = (googleUser: any) => {
+      try {
+        const profile = googleUser.getBasicProfile();
+        console.log('ID: ' + profile.getId());
+        console.log('Name: ' + profile.getName());
+        console.log('Image URL: ' + profile.getImageUrl());
+        console.log('Email: ' + profile.getEmail());
+
+        const result = loginWithGoogle({
+          id: profile.getId(),
+          name: profile.getName(),
+          imageUrl: profile.getImageUrl(),
+          email: profile.getEmail(),
+        });
+
+        if (!result.success) {
+          setAuthError(result.message || 'Google Sign-In failed domain validation.');
+        }
+      } catch (err) {
+        console.error('Google onSignIn callback error:', err);
+      }
+    };
+  }, [loginWithGoogle]);
+
+  // 2. Handle Manual Email/Password Sign-In
   const handleSignIn = (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError('');
@@ -83,7 +109,7 @@ export const AuthPage: React.FC = () => {
     }
   };
 
-  // 2. Handle 2FA Verification
+  // 3. Handle 2FA Verification
   const handleVerify2FA = (e: React.FormEvent) => {
     e.preventDefault();
     if (twoFactorCode.trim() === '123456' || twoFactorCode.trim().length === 6) {
@@ -93,7 +119,7 @@ export const AuthPage: React.FC = () => {
     }
   };
 
-  // 3. Handle Google SSO Click
+  // 4. Handle Google SSO Click
   const handleGoogleSignIn = () => {
     setAuthError('');
     const result = loginWithGoogle();
