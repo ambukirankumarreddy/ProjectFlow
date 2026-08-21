@@ -228,9 +228,36 @@ interface AppContextType {
   resetToDemoData: () => void;
 }
 
+const DEFAULT_USER: User = {
+  id: 'usr-admin-default',
+  employeeId: 'ADM-001',
+  name: 'Super Admin',
+  email: 'admin@company.com',
+  googleEmail: 'admin@company.com',
+  isGoogleVerified: true,
+  companyDomain: 'company.com',
+  twoFactorEnabled: false,
+  avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+  role: 'Super Admin',
+  department: 'Executive Leadership',
+  designation: 'Managing Director & Super Admin',
+  grade: 'L7 - Executive Board',
+  branch: 'Corporate Headquarters',
+  joiningDate: '2026-01-01',
+  employmentType: 'Permanent',
+  skills: ['Strategic Leadership', 'Enterprise Planning'],
+  monthlySalaryINR: 350000,
+  hourlyCostINR: 2187,
+  dailyCostINR: 17500,
+  billableRateINR: 4500,
+  availabilityHoursPerWeek: 40,
+  projectAllocations: [],
+  status: 'Active',
+};
+
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-const LOCAL_STORAGE_KEY = 'projectflow_ai_state_v3_chat';
+const LOCAL_STORAGE_KEY = 'projectflow_ai_enterprise_data';
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   // Theme
@@ -243,15 +270,25 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   });
 
   // Users & RBAC & Teams
-  const [users, setUsers] = useState<User[]>(INITIAL_USERS);
+  const [users, setUsers] = useState<User[]>(() => {
+    const saved = localStorage.getItem('projectflow_users');
+    return saved ? JSON.parse(saved) : INITIAL_USERS;
+  });
   const [teams, setTeams] = useState<Team[]>(INITIAL_TEAMS);
-  const [activeRole, setActiveRole] = useState<UserRole>('Project Manager');
-  const [currentUser, setCurrentUser] = useState<User>(INITIAL_USERS[1]); // Sarah Jenkins
+  const [currentUser, setCurrentUser] = useState<User>(() => {
+    const saved = localStorage.getItem('projectflow_users');
+    const parsed = saved ? JSON.parse(saved) : INITIAL_USERS;
+    return parsed[0] || DEFAULT_USER;
+  });
+  const [activeRole, setActiveRole] = useState<UserRole>(() => currentUser?.role || 'Super Admin');
   const [isGoogleAuthModalOpen, setIsGoogleAuthModalOpen] = useState(false);
 
   // Projects
-  const [projects, setProjects] = useState<Project[]>(INITIAL_PROJECTS);
-  const [selectedProjectId, setSelectedProjectId] = useState<string>('proj-1');
+  const [projects, setProjects] = useState<Project[]>(() => {
+    const saved = localStorage.getItem('projectflow_projects');
+    return saved ? JSON.parse(saved) : INITIAL_PROJECTS;
+  });
+  const [selectedProjectId, setSelectedProjectId] = useState<string>(() => projects[0]?.id || '');
 
   // Epics & Tasks
   const [epics, setEpics] = useState<Epic[]>(INITIAL_EPICS);
@@ -1615,35 +1652,54 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     logAction('Updated organization onboarding settings', 'Administration');
   };
 
-  // Reset Demo
+  // Reset Workspace & Session (Full Fresh Wipe)
   const resetToDemoData = () => {
-    localStorage.removeItem(LOCAL_STORAGE_KEY);
-    setUsers(INITIAL_USERS);
-    setTeams(INITIAL_TEAMS);
-    setProjects(INITIAL_PROJECTS);
-    setSelectedProjectId('proj-1');
-    setEpics(INITIAL_EPICS);
-    setTasks(INITIAL_TASKS);
-    setSprints(INITIAL_SPRINTS);
-    setTimesheets(INITIAL_TIMESHEETS);
-    setRequirements(INITIAL_REQUIREMENTS);
-    setTestCases(INITIAL_TEST_CASES);
-    setBugs(INITIAL_BUGS);
-    setBomItems(INITIAL_BOM);
-    setBudget(INITIAL_BUDGET);
-    setMeetings(INITIAL_MEETINGS);
-    setNotifications(INITIAL_NOTIFICATIONS_V2);
-    setNotificationPreferences(INITIAL_NOTIFICATION_PREFERENCES);
-    setConversations(INITIAL_CONVERSATIONS);
-    setMessages(INITIAL_MESSAGES);
-    setAlertEscalations(INITIAL_ALERT_ESCALATIONS);
-    setAuditLogs(INITIAL_AUDIT_LOGS);
+    localStorage.removeItem('projectflow_auth');
+    localStorage.removeItem('projectflow_users');
+    localStorage.removeItem('projectflow_projects');
+    localStorage.removeItem('projectflow_tasks');
+    localStorage.removeItem('projectflow_org');
+    localStorage.removeItem('projectflow_token');
+    localStorage.removeItem('google_client_id');
+    setIsAuthenticated(false);
+    setUsers([]);
+    setCurrentUser(DEFAULT_USER);
+    setActiveRole('Super Admin');
+    setProjects([]);
+    setSelectedProjectId('');
+    setEpics([]);
+    setTasks([]);
+    setSprints([]);
+    setTimesheets([]);
+    setRequirements([]);
+    setTestCases([]);
+    setBugs([]);
+    setBomItems([]);
+    setBudget({
+      projectId: '',
+      currency: 'INR',
+      totalBudgetINR: 0,
+      softwareCostINR: 0,
+      aiDevelopmentCostINR: 0,
+      hardwareCostINR: 0,
+      mechanicalCostINR: 0,
+      electricalCostINR: 0,
+      procurementCostINR: 0,
+      manpowerCostINR: 0,
+      travelCostINR: 0,
+      contingencyINR: 0,
+      gstPercentage: 18,
+      actualSpendINR: 0,
+    });
+    setMeetings([]);
+    setNotifications([]);
+    setConversations([]);
+    setMessages([]);
+    setAlertEscalations([]);
+    setAuditLogs([]);
     setActiveTimer(null);
-    setCurrentUser(INITIAL_USERS[1]);
-    setActiveRole('Project Manager');
     setIsEmergencyAlarmActive(false);
     audioEngine.stopEmergencyAlarm();
-    logAction('Reset platform database to initial state with Real-Time Chat and Web Audio engine', 'System Database');
   };
 
   return (

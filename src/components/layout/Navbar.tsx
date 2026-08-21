@@ -90,17 +90,26 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div className="p-2 rounded-xl bg-brand-500/10 text-brand-400 border border-brand-500/20">
             <FolderKanban className="w-4 h-4" />
           </div>
-          <select
-            value={selectedProjectId}
-            onChange={e => setSelectedProjectId(e.target.value)}
-            className="bg-slate-900/90 border border-slate-800 hover:border-slate-700 text-slate-100 text-xs font-bold rounded-xl px-3 py-2 focus:outline-none focus:border-brand-500 cursor-pointer shadow-sm"
-          >
-            {projects.map(p => (
-              <option key={p.id} value={p.id}>
-                {p.key} - {p.name}
-              </option>
-            ))}
-          </select>
+          {projects.length > 0 ? (
+            <select
+              value={selectedProjectId}
+              onChange={e => setSelectedProjectId(e.target.value)}
+              className="bg-slate-900/90 border border-slate-800 hover:border-slate-700 text-slate-100 text-xs font-bold rounded-xl px-3 py-2 focus:outline-none focus:border-brand-500 cursor-pointer shadow-sm"
+            >
+              {projects.map(p => (
+                <option key={p.id} value={p.id}>
+                  {p.key} - {p.name}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <button
+              onClick={onOpenCreateProject}
+              className="px-3 py-1.5 rounded-xl bg-brand-500/20 text-brand-300 border border-brand-500/40 text-xs font-bold hover:bg-brand-500/30 transition-colors shadow-sm"
+            >
+              + Create First Project
+            </button>
+          )}
         </div>
 
         {/* Currency & Financial Year Tag */}

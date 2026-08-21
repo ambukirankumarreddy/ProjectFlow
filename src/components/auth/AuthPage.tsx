@@ -15,10 +15,8 @@ import {
   Users2,
   IndianRupee,
   AlertTriangle,
-  Flame,
   Globe,
-  Briefcase,
-  ChevronRight
+  Briefcase
 } from 'lucide-react';
 import { GoogleOAuthModal } from './GoogleOAuthModal';
 import { UserRole } from '../../types';
@@ -33,7 +31,8 @@ export const AuthPage: React.FC = () => {
     orgSettings,
   } = useApp();
 
-  const [activeTab, setActiveTab] = useState<'signin' | 'register_org' | 'accept_invite'>('signin');
+  // Start fresh directly on the Registration page
+  const [activeTab, setActiveTab] = useState<'register_org' | 'signin' | 'accept_invite'>('register_org');
   const [isGoogleOAuthModalOpen, setIsGoogleOAuthModalOpen] = useState(false);
 
   // Sign-in Form State
@@ -46,12 +45,12 @@ export const AuthPage: React.FC = () => {
   const [pendingUser, setPendingUser] = useState<any>(null);
 
   // Register Org Form State
-  const [orgName, setOrgName] = useState('');
-  const [orgDomain, setOrgDomain] = useState('');
-  const [adminName, setAdminName] = useState('');
-  const [adminEmail, setAdminEmail] = useState('');
-  const [adminPassword, setAdminPassword] = useState('');
-  const [adminConfirmPassword, setAdminConfirmPassword] = useState('');
+  const [orgName, setOrgName] = useState('Edgeforce Simulation & Aerospace');
+  const [orgDomain, setOrgDomain] = useState('edgeforce.in');
+  const [adminName, setAdminName] = useState('Ambu Kiran Kumar Reddy');
+  const [adminEmail, setAdminEmail] = useState('ambukiran@edgeforce.in');
+  const [adminPassword, setAdminPassword] = useState('Password@2026');
+  const [adminConfirmPassword, setAdminConfirmPassword] = useState('Password@2026');
   const [industry, setIndustry] = useState('Defense & Aerospace Simulation');
 
   // Employee Invite Form State
@@ -59,20 +58,15 @@ export const AuthPage: React.FC = () => {
   const [empName, setEmpName] = useState('');
   const [empEmail, setEmpEmail] = useState('');
   const [empPassword, setEmpPassword] = useState('');
-  const [empDepartment, setEmpDepartment] = useState('Software');
+  const [empDepartment, setEmpDepartment] = useState('Software Engineering');
   const [empRole, setEmpRole] = useState<UserRole>('Developer/Member');
   const [empReportingManagerId, setEmpReportingManagerId] = useState('');
 
-  // 1. Hook onSignIn and Google Identity callback on window
+  // 1. Google Identity Callback Handler
   React.useEffect(() => {
     (window as any).onSignIn = (googleUser: any) => {
       try {
         const profile = googleUser.getBasicProfile();
-        console.log('ID: ' + profile.getId());
-        console.log('Name: ' + profile.getName());
-        console.log('Image URL: ' + profile.getImageUrl());
-        console.log('Email: ' + profile.getEmail());
-
         const result = loginWithGoogle({
           id: profile.getId(),
           name: profile.getName(),
@@ -121,16 +115,21 @@ export const AuthPage: React.FC = () => {
     }
   };
 
-  // 4. Handle Google SSO Click (Opens real Google OAuth & GSI Dialog)
+  // 4. Handle Google SSO Click
   const handleGoogleSignIn = () => {
     setAuthError('');
     setIsGoogleOAuthModalOpen(true);
   };
 
-  // 4. Handle Super Admin & Organization Registration
+  // 5. Handle Super Admin & Organization Registration
   const handleRegisterOrg = (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError('');
+
+    if (!orgName.trim()) {
+      setAuthError('Please provide an organization name.');
+      return;
+    }
 
     if (adminPassword !== adminConfirmPassword) {
       setAuthError('Passwords do not match.');
@@ -143,11 +142,11 @@ export const AuthPage: React.FC = () => {
     }
 
     const result = registerOrganization({
-      organizationName: orgName,
-      domain: orgDomain.replace('@', ''),
-      adminName,
-      adminEmail,
-      adminPassword,
+      organizationName: orgName.trim(),
+      domain: orgDomain.trim().replace('@', ''),
+      adminName: adminName.trim(),
+      adminEmail: adminEmail.trim(),
+      adminPassword: adminPassword,
       industry,
     });
 
@@ -156,15 +155,15 @@ export const AuthPage: React.FC = () => {
     }
   };
 
-  // 5. Handle Employee Invite Registration
+  // 6. Handle Employee Invite Registration
   const handleAcceptInvite = (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError('');
 
     const result = registerWithInvite({
-      token: inviteToken,
-      name: empName,
-      email: empEmail,
+      token: inviteToken.trim(),
+      name: empName.trim(),
+      email: empEmail.trim(),
       password: empPassword,
       department: empDepartment,
       role: empRole,
@@ -173,20 +172,6 @@ export const AuthPage: React.FC = () => {
 
     if (!result.success) {
       setAuthError(result.message || 'Invitation acceptance failed.');
-    }
-  };
-
-  // Quick Demo Access One-Click Helper
-  const handleQuickDemo = (userRole: 'admin' | 'pm' | 'lead' | 'dev') => {
-    setAuthError('');
-    if (userRole === 'admin') {
-      loginWithEmail('ambukiran@edgeforce.in', 'admin123', true);
-    } else if (userRole === 'pm') {
-      loginWithEmail('sarah.j@edgeforce.in', 'pm123', true);
-    } else if (userRole === 'lead') {
-      loginWithEmail('vikram.malhotra@edgeforce.in', 'lead123', true);
-    } else {
-      loginWithEmail('david.chen@edgeforce.in', 'dev123', true);
     }
   };
 
@@ -210,7 +195,7 @@ export const AuthPage: React.FC = () => {
               </span>
             </h1>
             <p className="text-[11px] text-slate-400">
-              Intelligent Project, Manpower & Defense Simulator Management
+              Autonomous Project, Task & Defense Simulation Platform
             </p>
           </div>
         </div>
@@ -235,6 +220,21 @@ export const AuthPage: React.FC = () => {
           <div className="flex p-1 bg-slate-950 border border-slate-800 rounded-2xl text-xs font-bold">
             <button
               onClick={() => {
+                setActiveTab('register_org');
+                setAuthError('');
+              }}
+              className={`flex-1 py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 ${
+                activeTab === 'register_org'
+                  ? 'bg-purple-600 text-white shadow-glow-purple'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Building2 className="w-3.5 h-3.5" />
+              <span>Register Organization</span>
+            </button>
+
+            <button
+              onClick={() => {
                 setActiveTab('signin');
                 setTwoFactorStep(false);
                 setAuthError('');
@@ -251,21 +251,6 @@ export const AuthPage: React.FC = () => {
 
             <button
               onClick={() => {
-                setActiveTab('register_org');
-                setAuthError('');
-              }}
-              className={`flex-1 py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 ${
-                activeTab === 'register_org'
-                  ? 'bg-purple-600 text-white shadow-glow-purple'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <Building2 className="w-3.5 h-3.5" />
-              <span>Register Org</span>
-            </button>
-
-            <button
-              onClick={() => {
                 setActiveTab('accept_invite');
                 setAuthError('');
               }}
@@ -276,7 +261,7 @@ export const AuthPage: React.FC = () => {
               }`}
             >
               <Users2 className="w-3.5 h-3.5" />
-              <span>Join Invite</span>
+              <span>Join via Invite</span>
             </button>
           </div>
 
@@ -288,7 +273,154 @@ export const AuthPage: React.FC = () => {
             </div>
           )}
 
-          {/* TAB 1: SIGN IN */}
+          {/* TAB 1 (DEFAULT): REGISTER ORGANIZATION & SUPER ADMIN */}
+          {activeTab === 'register_org' && (
+            <form onSubmit={handleRegisterOrg} className="space-y-4 text-xs">
+              <div className="text-center space-y-1">
+                <h2 className="text-xl font-extrabold text-white">
+                  Register Your Organization
+                </h2>
+                <p className="text-xs text-slate-400">
+                  Initial Super Admin and organization setup with clean workspace and INR (₹) localization
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">
+                    Organization Name *
+                  </label>
+                  <div className="relative">
+                    <Building2 className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Edgeforce Simulation & Aerospace"
+                      value={orgName}
+                      onChange={e => setOrgName(e.target.value)}
+                      className="w-full pl-9 pr-3 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-slate-100 focus:outline-none focus:border-brand-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">
+                    Corporate Domain *
+                  </label>
+                  <div className="relative">
+                    <Globe className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
+                    <input
+                      type="text"
+                      required
+                      placeholder="edgeforce.in"
+                      value={orgDomain}
+                      onChange={e => setOrgDomain(e.target.value)}
+                      className="w-full pl-9 pr-3 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-slate-100 font-mono focus:outline-none focus:border-brand-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">
+                    Super Admin Full Name *
+                  </label>
+                  <div className="relative">
+                    <User className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
+                    <input
+                      type="text"
+                      required
+                      placeholder="Ambu Kiran Kumar Reddy"
+                      value={adminName}
+                      onChange={e => setAdminName(e.target.value)}
+                      className="w-full pl-9 pr-3 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-slate-100 focus:outline-none focus:border-brand-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">
+                    Admin Office Email *
+                  </label>
+                  <div className="relative">
+                    <Mail className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
+                    <input
+                      type="email"
+                      required
+                      placeholder="ambukiran@edgeforce.in"
+                      value={adminEmail}
+                      onChange={e => setAdminEmail(e.target.value)}
+                      className="w-full pl-9 pr-3 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-slate-100 focus:outline-none focus:border-brand-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">
+                    Admin Password *
+                  </label>
+                  <div className="relative">
+                    <Lock className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
+                    <input
+                      type="password"
+                      required
+                      placeholder="••••••••••••"
+                      value={adminPassword}
+                      onChange={e => setAdminPassword(e.target.value)}
+                      className="w-full pl-9 pr-3 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-slate-100 focus:outline-none focus:border-brand-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">
+                    Confirm Password *
+                  </label>
+                  <div className="relative">
+                    <Lock className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
+                    <input
+                      type="password"
+                      required
+                      placeholder="••••••••••••"
+                      value={adminConfirmPassword}
+                      onChange={e => setAdminConfirmPassword(e.target.value)}
+                      className="w-full pl-9 pr-3 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-slate-100 focus:outline-none focus:border-brand-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">Industry Sector</label>
+                <div className="relative">
+                  <Briefcase className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
+                  <select
+                    value={industry}
+                    onChange={e => setIndustry(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-slate-100 focus:outline-none focus:border-brand-500"
+                  >
+                    <option value="Defense & Aerospace Simulation">Defense & Aerospace Simulation</option>
+                    <option value="Enterprise SaaS & IT Services">Enterprise SaaS & IT Services</option>
+                    <option value="Heavy Engineering & Manufacturing">Heavy Engineering & Manufacturing</option>
+                    <option value="Autonomous Robotics & Hardware">Autonomous Robotics & Hardware</option>
+                  </select>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-purple-600 to-brand-600 hover:from-purple-500 hover:to-brand-500 text-white font-extrabold shadow-glow-purple flex items-center justify-center gap-2 transition-all active:scale-[0.99] text-xs mt-2"
+              >
+                <span>Register Organization & Launch Workspace</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </form>
+          )}
+
+          {/* TAB 2: SIGN IN */}
           {activeTab === 'signin' && (
             <div className="space-y-5">
               {!twoFactorStep ? (
@@ -296,7 +428,7 @@ export const AuthPage: React.FC = () => {
                   <div className="text-center space-y-1">
                     <h2 className="text-xl font-extrabold text-white">Welcome Back</h2>
                     <p className="text-xs text-slate-400">
-                      Sign in with your enterprise account or company Google Workspace
+                      Sign in with your enterprise credentials or Google Workspace
                     </p>
                   </div>
 
@@ -324,12 +456,12 @@ export const AuthPage: React.FC = () => {
                         d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
                       />
                     </svg>
-                    <span>Continue with Google Workspace (@{orgSettings.companyDomain})</span>
+                    <span>Continue with Google Workspace</span>
                   </button>
 
                   <div className="flex items-center gap-3 text-xs text-slate-500">
                     <div className="flex-1 h-px bg-slate-800" />
-                    <span>OR EMAIL & PASSWORD</span>
+                    <span>OR CORPORATE EMAIL</span>
                     <div className="flex-1 h-px bg-slate-800" />
                   </div>
 
@@ -344,7 +476,7 @@ export const AuthPage: React.FC = () => {
                         <input
                           type="email"
                           required
-                          placeholder={`name@${orgSettings.companyDomain}`}
+                          placeholder="name@edgeforce.in"
                           value={email}
                           onChange={e => setEmail(e.target.value)}
                           className="w-full pl-10 pr-3 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-500"
@@ -380,7 +512,7 @@ export const AuthPage: React.FC = () => {
 
                       <button
                         type="button"
-                        onClick={() => alert('Password reset link sent to your registered office email.')}
+                        onClick={() => alert('Password reset instructions sent to your registered office email.')}
                         className="text-brand-400 hover:text-brand-300 font-semibold"
                       >
                         Forgot password?
@@ -407,7 +539,7 @@ export const AuthPage: React.FC = () => {
                       Two-Factor Authentication Required
                     </h3>
                     <p className="text-slate-400 text-xs">
-                      Enter the 6-digit Google Authenticator OTP for{' '}
+                      Enter the 6-digit OTP for{' '}
                       <strong className="text-slate-200">{pendingUser?.email}</strong>
                     </p>
                   </div>
@@ -444,177 +576,7 @@ export const AuthPage: React.FC = () => {
                   </div>
                 </form>
               )}
-
-              {/* Quick 1-Click Role Login for Quick Testing */}
-              <div className="pt-4 border-t border-slate-800/80 space-y-2">
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block text-center">
-                  Quick Demo Evaluation Access:
-                </span>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleQuickDemo('admin')}
-                    className="p-2 rounded-xl bg-slate-950 border border-purple-500/30 hover:border-purple-500/60 text-left text-xs transition-colors"
-                  >
-                    <span className="font-bold text-purple-300 block">Super Admin</span>
-                    <span className="text-[10px] text-slate-500 truncate block">Ambu Kiran</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleQuickDemo('pm')}
-                    className="p-2 rounded-xl bg-slate-950 border border-brand-500/30 hover:border-brand-500/60 text-left text-xs transition-colors"
-                  >
-                    <span className="font-bold text-brand-300 block">Project Lead</span>
-                    <span className="text-[10px] text-slate-500 truncate block">Sarah Jenkins</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleQuickDemo('lead')}
-                    className="p-2 rounded-xl bg-slate-950 border border-cyan-500/30 hover:border-cyan-500/60 text-left text-xs transition-colors"
-                  >
-                    <span className="font-bold text-cyan-300 block">Team Lead</span>
-                    <span className="text-[10px] text-slate-500 truncate block">Vikram Malhotra</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleQuickDemo('dev')}
-                    className="p-2 rounded-xl bg-slate-950 border border-emerald-500/30 hover:border-emerald-500/60 text-left text-xs transition-colors"
-                  >
-                    <span className="font-bold text-emerald-300 block">Developer</span>
-                    <span className="text-[10px] text-slate-500 truncate block">David Chen</span>
-                  </button>
-                </div>
-              </div>
             </div>
-          )}
-
-          {/* TAB 2: REGISTER ORGANIZATION (SUPER ADMIN SETUP) */}
-          {activeTab === 'register_org' && (
-            <form onSubmit={handleRegisterOrg} className="space-y-4 text-xs">
-              <div className="text-center space-y-1">
-                <h2 className="text-xl font-extrabold text-white">
-                  Register Your Organization
-                </h2>
-                <p className="text-xs text-slate-400">
-                  Initial Super Admin and organization setup with Indian Rupee (₹) localization
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-slate-300 font-semibold mb-1">
-                    Organization Name *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Edgeforce Defense Solutions"
-                    value={orgName}
-                    onChange={e => setOrgName(e.target.value)}
-                    className="w-full p-2.5 bg-slate-950 border border-slate-700 rounded-xl text-slate-100 focus:outline-none focus:border-brand-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-slate-300 font-semibold mb-1">
-                    Corporate Domain *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="edgeforce.in"
-                    value={orgDomain}
-                    onChange={e => setOrgDomain(e.target.value)}
-                    className="w-full p-2.5 bg-slate-950 border border-slate-700 rounded-xl text-slate-100 font-mono focus:outline-none focus:border-brand-500"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-slate-300 font-semibold mb-1">
-                    Super Admin Full Name *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Rajesh Varma"
-                    value={adminName}
-                    onChange={e => setAdminName(e.target.value)}
-                    className="w-full p-2.5 bg-slate-950 border border-slate-700 rounded-xl text-slate-100 focus:outline-none focus:border-brand-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-slate-300 font-semibold mb-1">
-                    Admin Office Email *
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    placeholder="rajesh.varma@edgeforce.in"
-                    value={adminEmail}
-                    onChange={e => setAdminEmail(e.target.value)}
-                    className="w-full p-2.5 bg-slate-950 border border-slate-700 rounded-xl text-slate-100 focus:outline-none focus:border-brand-500"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-slate-300 font-semibold mb-1">
-                    Password *
-                  </label>
-                  <input
-                    type="password"
-                    required
-                    placeholder="••••••••••••"
-                    value={adminPassword}
-                    onChange={e => setAdminPassword(e.target.value)}
-                    className="w-full p-2.5 bg-slate-950 border border-slate-700 rounded-xl text-slate-100 focus:outline-none focus:border-brand-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-slate-300 font-semibold mb-1">
-                    Confirm Password *
-                  </label>
-                  <input
-                    type="password"
-                    required
-                    placeholder="••••••••••••"
-                    value={adminConfirmPassword}
-                    onChange={e => setAdminConfirmPassword(e.target.value)}
-                    className="w-full p-2.5 bg-slate-950 border border-slate-700 rounded-xl text-slate-100 focus:outline-none focus:border-brand-500"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-slate-300 font-semibold mb-1">Industry Sector</label>
-                <select
-                  value={industry}
-                  onChange={e => setIndustry(e.target.value)}
-                  className="w-full p-2.5 bg-slate-950 border border-slate-700 rounded-xl text-slate-100 focus:outline-none focus:border-brand-500"
-                >
-                  <option value="Defense & Aerospace Simulation">Defense & Aerospace Simulation</option>
-                  <option value="Enterprise SaaS & IT">Enterprise SaaS & IT</option>
-                  <option value="Heavy Engineering & Manufacturing">Heavy Engineering & Manufacturing</option>
-                  <option value="Autonomous Robotics & Hardware">Autonomous Robotics & Hardware</option>
-                </select>
-              </div>
-
-              <button
-                type="submit"
-                className="w-full py-3 rounded-2xl bg-gradient-to-r from-purple-600 to-brand-600 hover:from-purple-500 hover:to-brand-500 text-white font-extrabold shadow-glow-purple flex items-center justify-center gap-2 transition-all active:scale-[0.99]"
-              >
-                <span>Register Organization & Super Admin</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </form>
           )}
 
           {/* TAB 3: JOIN VIA INVITATION */}
@@ -651,7 +613,7 @@ export const AuthPage: React.FC = () => {
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Arun Nair"
+                    placeholder="e.g. Rahul Sharma"
                     value={empName}
                     onChange={e => setEmpName(e.target.value)}
                     className="w-full p-2.5 bg-slate-950 border border-slate-700 rounded-xl text-slate-100 focus:outline-none focus:border-brand-500"
@@ -665,7 +627,7 @@ export const AuthPage: React.FC = () => {
                   <input
                     type="email"
                     required
-                    placeholder={`arun.nair@${orgSettings.companyDomain}`}
+                    placeholder="rahul.sharma@edgeforce.in"
                     value={empEmail}
                     onChange={e => setEmpEmail(e.target.value)}
                     className="w-full p-2.5 bg-slate-950 border border-slate-700 rounded-xl text-slate-100 focus:outline-none focus:border-brand-500"
@@ -695,13 +657,13 @@ export const AuthPage: React.FC = () => {
                     onChange={e => setEmpDepartment(e.target.value)}
                     className="w-full p-2.5 bg-slate-950 border border-slate-700 rounded-xl text-slate-100 focus:outline-none focus:border-brand-500"
                   >
-                    <option value="Unity Development">Unity Development</option>
+                    <option value="Software Engineering">Software Engineering</option>
                     <option value="AI Development">AI Development</option>
                     <option value="3D Modelling">3D Modelling</option>
                     <option value="Quality Assurance">Quality Assurance</option>
-                    <option value="Mechanical">Mechanical</option>
-                    <option value="Electrical">Electrical</option>
-                    <option value="Procurement">Procurement</option>
+                    <option value="Mechanical Engineering">Mechanical Engineering</option>
+                    <option value="Electrical & Electronics">Electrical & Electronics</option>
+                    <option value="Procurement & Supply Chain">Procurement & Supply Chain</option>
                   </select>
                 </div>
               </div>
@@ -747,7 +709,7 @@ export const AuthPage: React.FC = () => {
       <GoogleOAuthModal
         isOpen={isGoogleOAuthModalOpen}
         onClose={() => setIsGoogleOAuthModalOpen(false)}
-        companyDomain={orgSettings.companyDomain}
+        companyDomain={orgSettings.companyDomain || 'edgeforce.in'}
         onSuccess={(profile) => {
           const result = loginWithGoogle(profile);
           if (!result.success) {
